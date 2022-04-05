@@ -157,7 +157,6 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
                 --force ${MYSQLD_ENV} \
                 --max-test-fail=0 \
                 --suite-timeout=9999 --parallel $WORKER \
-                --port-group-size=20 \
                 --testcase-timeout=${TESTCASE_TIMEOUT} \
                 ${MTR_ARGS_NORMAL} \
                 --junit-output=${WORKDIR_ABS}/junit_${suiteNoSlash}.xml \
@@ -195,7 +194,6 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
                 --force ${MYSQLD_ENV} \
                 --max-test-fail=0 \
                 --suite-timeout=9999 --parallel $WORKER \
-                --port-group-size=20 \
                 --testcase-timeout=${TESTCASE_TIMEOUT_BIG} \
                 ${MTR_ARGS_BIG} \
                 --junit-output=${WORKDIR_ABS}/junit_${suiteNoSlash}.xml \
@@ -203,6 +201,7 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
 
             ln -s $PWD/var $PWD/var_${suiteNoSlash}
             ls -la
+            which rsync
             rsync -a -L --prune-empty-dirs --include '*/' --include '*.err' --exclude '*' $PWD/var_${suiteNoSlash} $PWD/mtr_var
             ls -la $PWD/mtr_var/
 
