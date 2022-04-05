@@ -10,6 +10,7 @@
 #      TOKUDB_ENGINES_MTR = (yes no)
 #      MTR_ARGS
 #      MTR_REPEAT
+#      MTR_SUITES
 #      DOCKER_OS
 
 set -o errexit
@@ -85,7 +86,7 @@ if [[ -n "${MTR_REPEAT}" ]]; then
   MTR_ARGS+=" --repeat=${MTR_REPEAT}"
 fi
 
-if [[ "${MTR_ARGS}" == *"--suite=max_parts"* ]]; then
+if [[ "${MTR_SUITES}" == *"max_parts"* ]]; then
     TESTCASE_TIMEOUT=$((TESTCASE_TIMEOUT * 3))
 fi
 
@@ -100,28 +101,129 @@ if [[ $MTR_ARGS == *"--big-test"* ]] || [[ $MTR_ARGS == *"--only-big-test"* ]]; 
     TESTCASE_TIMEOUT=$((TESTCASE_TIMEOUT * 2))
 fi
 
+#
+# execute big tests in separate run
+BIG_TEST=0
+ONLY_BIG_TEST=0
+if [[ $MTR_ARGS == *"--big-test"* ]]; then
+    BIG_TEST=1
+fi
+if [[ $MTR_ARGS == *"--only-big-test"* ]]; then
+    ONLY_BIG_TEST=1
+    BIG_TEST=1
+fi
+MTR_ARGS=${MTR_ARGS//"--big-test"/""}
+MTR_ARGS=${MTR_ARGS//"--only-big-test"/""}
+
+#
+# unit tests
+UNIT_TESTS=0
+if [[ $MTR_ARGS == *"--unit-tests-report"* ]]; then
+    UNIT_TESTS=1
+fi
+MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+
 status=0
 #
 # Running MTR test cases
 if [[ "${DEFAULT_TESTING}" != "no" ]]; then
+#>>>> main MTR execution loop starts here
+    ARRAY_MTR_SUITES=($(echo $MTR_SUITES | sed 's/,/ /g'))
+    for suite in "${ARRAY_MTR_SUITES[@]}"; do
+        WORKER=${PARALLEL}
+        suiteNoSlash=${suite//"/"/"_"}
+        echo "Running MTR suite: $suite (noslash: $suiteNoSlash)"
 
-    if [[ "${ANALYZER_OPTS}" == *WITH_VALGRIND=ON* ]]; then
-        MYSQLD_ENV="${ADD_TO_LD_PRELOAD:-}${EATMYDATA}"
-    else
-        MYSQLD_ENV="${ADD_TO_LD_PRELOAD:-}${JEMALLOC}:${EATMYDATA}"
-    fi
+        start=`date +%s`
 
-  MTR_BUILD_THREAD=auto ./mysql-test-run.pl \
-        --parallel=${PARALLEL} \
-        --result-file \
-        --suite-timeout=9999 \
-        --testcase-timeout=${TESTCASE_TIMEOUT} \
-        ${MTR_ARGS} \
-        --force --mysqld-env="LD_PRELOAD=${MYSQLD_ENV}" \
-        --max-test-fail=0 \
-        --junit-output=${WORKDIR_ABS}/junit.xml \
-        --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.main" || true
-fi
+        if [[ $ONLY_BIG_TEST == "0" ]]; then
+            echo "Executing normal tests for suite $suite"
+
+            df -h
+            du /dev/shm
+            mount
+            ls -la /dev/shm
+            cat /proc/meminfo
+
+            MTR_ARGS_NORMAL=${MTR_ARGS}
+
+            if [[ $UNIT_TESTS == "1" ]]; then
+                MTR_ARGS_NORMAL+=" --unit-tests-report"
+                UNIT_TESTS=0
+            fi
+
+            MTR_BUILD_THREAD=auto ./mysql-test-run.pl \
+                --result-file --suite=$suite \
+                --force ${MYSQLD_ENV} \
+                --max-test-fail=0 \
+                --suite-timeout=9999 --parallel $WORKER \
+                --port-group-size=20 \
+                --testcase-timeout=${TESTCASE_TIMEOUT} \
+                ${MTR_ARGS_NORMAL} \
+                --junit-output=${WORKDIR_ABS}/junit_${suiteNoSlash}.xml \
+                --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.${suiteNoSlash}" || true
+
+            ln -s $PWD/var $PWD/var_${suiteNoSlash}
+            ls -la
+            rsync -a -L --prune-empty-dirs --include '*/' --include '*.err' --exclude '*' $PWD/var_${suiteNoSlash} $PWD/mtr_var
+            ls -la $PWD/mtr_var/
+
+            killall -9 mysqld || true
+            rm -rf $PWD/var_${suiteNoSlash}
+            ls -la
+
+            df -h
+            du /dev/shm
+            mount
+            ls -la /dev/shm
+        fi
+
+        if [[ $BIG_TEST == "1" ]]; then
+            echo "Executing big tests for suite $suite"
+            MTR_ARGS_BIG=${MTR_ARGS}
+            MTR_ARGS_BIG+=" --only-big-test"
+            suiteNoSlash+="_bigtest"
+            TESTCASE_TIMEOUT_BIG=$((TESTCASE_TIMEOUT * 4))
+
+            if [[ $UNIT_TESTS == "1" ]]; then
+                MTR_ARGS_BIG+=" --unit-tests-report"
+                UNIT_TESTS=0
+            fi
+
+            MTR_BUILD_THREAD=auto ./mysql-test-run.pl \
+                --result-file --suite=$suite \
+                --force ${MYSQLD_ENV} \
+                --max-test-fail=0 \
+                --suite-timeout=9999 --parallel $WORKER \
+                --port-group-size=20 \
+                --testcase-timeout=${TESTCASE_TIMEOUT_BIG} \
+                ${MTR_ARGS_BIG} \
+                --junit-output=${WORKDIR_ABS}/junit_${suiteNoSlash}.xml \
+                --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.${suiteNoSlash}" || true
+
+            ln -s $PWD/var $PWD/var_${suiteNoSlash}
+            ls -la
+            rsync -a -L --prune-empty-dirs --include '*/' --include '*.err' --exclude '*' $PWD/var_${suiteNoSlash} $PWD/mtr_var
+            ls -la $PWD/mtr_var/
+
+            killall -9 mysqld || true
+            rm -rf $PWD/var_${suiteNoSlash}
+            ls -la
+
+            df -h
+            du /dev/shm
+            mount
+            ls -la /dev/shm
+        fi
+
+        end=`date +%s`
+        runtime=$((end-start))
+        echo KH,SUITE,${suite},time,$runtime
+
+    done
+#<<<< main MTR execution loop ends here
+
+# KH: this stuff will not happen now
 #
 if [[ "$HOTBACKUP_TESTING" != "no" ]] && [[ -n "${TOKUDB_PLUGIN}" ]] && [[ -n "${HOTBACKUP_LIB}" ]] && [[ -n "${HOTBACKUP_PLUGIN}" ]]; then
     MYSQLD_ENV="${ADD_TO_LD_PRELOAD:-}${HOTBACKUP_LIB}:${JEMALLOC}:${EATMYDATA}"

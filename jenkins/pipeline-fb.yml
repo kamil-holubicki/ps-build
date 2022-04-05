@@ -1,5 +1,5 @@
 - job:
-    name: fb-mysql-server-8.0-pipeline
+    name: fb-mysql-server-8.0-pipeline-parallel-mtr
     project-type: pipeline
     description: |
         Do not edit this job through the web!
@@ -7,20 +7,24 @@
     pipeline-scm:
       scm:
         - git:
-            url: https://github.com/Percona-Lab/ps-build
+            url: https://github.com/kamil-holubicki/ps-build
             branches:
-            - "8.0"
+            - "parallel-fb"
             wipe-workspace: false
       lightweight-checkout: true
       script-path: jenkins/pipeline-fb.groovy
     parameters:
     - string:
+        name: BUILD_NUMBER_BINARIES
+        default: ""
+        description: Reuse binaries built in the specified build. Useful for quick MTR test rerun without rebuild.
+    - string:
         name: GIT_REPO
-        default: "https://github.com/facebook/mysql-5.6"
+        default: "https://github.com/inikep/mysql-5.6"
         description: URL to repository
     - string:
         name: BRANCH
-        default: "fb-mysql-8.0.13"
+        default: "fb-8.0.28"
         description: Tag/Branch for repository
     - choice:
         name: DOCKER_OS
@@ -78,7 +82,7 @@
         description: Run mysql-test-run.pl
     - string:
         name: MTR_ARGS
-        default: --unit-tests-report
+        default: --unit-tests-report --mem --big-test
         description: "mysql-test-run.pl options, for options like: --big-test --only-big-test --nounit-tests --unit-tests-report"
     - string:
         name: MTR_REPEAT
@@ -89,3 +93,41 @@
         choices:
         - docker-32gb
         description: Run build on specified instance type
+    - choice:
+        name: FULL_MTR
+        choices:
+        - "yes"
+        - "no"
+        description: Run mtr suites based on variable WORKER_X_MTR_SUITES if the value is `no`. Otherwise the full mtr will be perfomed.
+    - string:
+        name: WORKER_1_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 1 when FULL_MTR is no. Unit tests, if requested, can be ran here only!"
+    - string:
+        name: WORKER_2_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 2 when FULL_MTR is no"
+    - string:
+        name: WORKER_3_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 3 when FULL_MTR is no"
+    - string:
+        name: WORKER_4_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 4 when FULL_MTR is no"
+    - string:
+        name: WORKER_5_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 5 when FULL_MTR is no"
+    - string:
+        name: WORKER_6_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 6 when FULL_MTR is no"
+    - string:
+        name: WORKER_7_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 7 when FULL_MTR is no"
+    - string:
+        name: WORKER_8_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 8 when FULL_MTR is no"

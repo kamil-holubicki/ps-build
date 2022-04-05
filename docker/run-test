@@ -54,7 +54,7 @@ if [[ "${KEYRING_VAULT_MTR}" == 'yes' ]] && [[ ${DOCKER_OS} != 'centos:6' ]] && 
     VAULT_DOCKER_FLAG="--network bridge-vault"
 fi
 
-docker run --rm \
+docker run --rm --shm-size=20gb \
     --security-opt seccomp=unconfined \
     --sysctl net.ipv6.conf.lo.disable_ipv6=0 \
     --mount type=bind,source=${ROOT_DIR},destination=/tmp/ps \
@@ -76,6 +76,7 @@ docker run --rm \
     export TOKUDB_ENGINES_MTR_ARGS='${TOKUDB_ENGINES_MTR_ARGS}'
     export MTR_ARGS='${MTR_ARGS}'
     export MTR_REPEAT='${MTR_REPEAT}'
+    export MTR_SUITES='${MTR_SUITES}'
     export CI_FS_MTR='${CI_FS_MTR}'
     export KEYRING_VAULT_MTR='${KEYRING_VAULT_MTR}'
     export VAULT_V1_DEV_ADDRESS='http://vault-dev-v1:9200'
