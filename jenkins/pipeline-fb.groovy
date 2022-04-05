@@ -218,7 +218,7 @@ pipeline {
                                 fi
                                 rm -f ${WORKSPACE}/VERSION-${BUILD_NUMBER}
                             '''
-                            git branch: '8.0', url: 'https://github.com/Percona-Lab/ps-build'
+                            git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
                             sh '''
                                 # sudo is needed for better node recovery after compilation failure
                                 # if building failed on compilation stage directory will have files owned by docker user
@@ -262,12 +262,13 @@ pipeline {
                         }
                     }
                 }
-                script {
-                    env.BUILD_TAG_BINARIES = env.BUILD_TAG
-                }
             }
         }
         stage('Archive Build') {
+            when {
+                beforeAgent true
+                expression { env.BUILD_NUMBER_BINARIES == '' }
+            }
             agent { label 'micro-amazon' }
             steps {
                 timeout(time: 60, unit: 'MINUTES')  {
@@ -279,6 +280,9 @@ pipeline {
                         '''
                         recordIssues enabledForFailure: true, tools: [gcc(pattern: 'build.log')]
                     }
+                }
+                script {
+                    env.BUILD_TAG_BINARIES = env.BUILD_TAG
                 }
             }
         }
@@ -292,7 +296,7 @@ pipeline {
                         agent { label LABEL }
                         steps {
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: '8.0', url: 'https://github.com/Percona-Lab/ps-build'
+                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -337,7 +341,7 @@ pipeline {
                         agent { label LABEL }
                         steps {
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: '8.0', url: 'https://github.com/Percona-Lab/ps-build'
+                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -382,7 +386,7 @@ pipeline {
                         agent { label LABEL }
                         steps {
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: '8.0', url: 'https://github.com/Percona-Lab/ps-build'
+                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -427,7 +431,7 @@ pipeline {
                         agent { label LABEL }
                         steps {
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: '8.0', url: 'https://github.com/Percona-Lab/ps-build'
+                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -472,7 +476,7 @@ pipeline {
                         agent { label LABEL }
                         steps {
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: '8.0', url: 'https://github.com/Percona-Lab/ps-build'
+                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -517,7 +521,7 @@ pipeline {
                         agent { label LABEL }
                         steps {
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: '8.0', url: 'https://github.com/Percona-Lab/ps-build'
+                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -562,7 +566,7 @@ pipeline {
                         agent { label LABEL }
                         steps {
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: '8.0', url: 'https://github.com/Percona-Lab/ps-build'
+                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -607,7 +611,7 @@ pipeline {
                         agent { label LABEL }
                         steps {
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: '8.0', url: 'https://github.com/Percona-Lab/ps-build'
+                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
