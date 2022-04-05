@@ -165,6 +165,7 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
             ln -s $PWD/var $PWD/var_${suiteNoSlash}
             ls -la
             which rsync
+            ls -la /usr/bin/*
             rsync -a -L --prune-empty-dirs --include '*/' --include '*.err' --exclude '*' $PWD/var_${suiteNoSlash} $PWD/mtr_var
             ls -la $PWD/mtr_var/
 
@@ -203,6 +204,7 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
             ln -s $PWD/var $PWD/var_${suiteNoSlash}
             ls -la
             which rsync
+            ls -la /usr/bin/*
             rsync -a -L --prune-empty-dirs --include '*/' --include '*.err' --exclude '*' $PWD/var_${suiteNoSlash} $PWD/mtr_var
             ls -la $PWD/mtr_var/
 

@@ -95,6 +95,9 @@ docker run --rm --shm-size=20gb \
     export ZEN_FS_MTR='${ZEN_FS_MTR}'
     export WITH_ROCKSDB='${WITH_ROCKSDB}'
 
+    sudo apt update
+    sudo apt -y install rsync
+
     mv /tmp/ps/*.pem /tmp/results || true
     cp /tmp/ps/results/*.tar.gz /tmp/results
 
