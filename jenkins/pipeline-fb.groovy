@@ -196,7 +196,7 @@ pipeline {
                         script {
                             currentBuild.displayName = "${BUILD_NUMBER} ${CMAKE_BUILD_TYPE}/${DOCKER_OS}"
                         }
-                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: '863baec1-9548-4f2f-917d-13f2191d246c', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                             sh 'echo Prepare: \$(date -u "+%s")'
                             echo 'Checking Percona Server branch version, JEN-913 prevent wrong version run'
                             sh '''
