@@ -221,6 +221,7 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
         echo KH,SUITE,${suite},time,$runtime
 
     done
+fi
 #<<<< main MTR execution loop ends here
 
 # KH: this stuff will not happen now
