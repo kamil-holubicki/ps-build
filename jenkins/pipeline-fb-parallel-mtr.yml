@@ -1,0 +1,139 @@
+- job:
+    name: fb-mysql-server-8.0-pipeline-parallel-mtr
+    project-type: pipeline
+    description: |
+        Do not edit this job through the web!
+    concurrent: true
+    pipeline-scm:
+      scm:
+        - git:
+            url: https://github.com/kamil-holubicki/ps-build
+            branches:
+            - "parallel-fb"
+            wipe-workspace: false
+      lightweight-checkout: true
+      script-path: jenkins/pipeline-fb-parallel-mtr.groovy
+    parameters:
+    - string:
+        name: BUILD_NUMBER_BINARIES
+        default: ""
+        description: Reuse binaries built in the specified build. Useful for quick MTR test rerun without rebuild.
+    - string:
+        name: GIT_REPO
+        default: "https://github.com/inikep/mysql-5.6"
+        description: URL to repository
+    - string:
+        name: BRANCH
+        default: "fb-8.0.28"
+        description: Tag/Branch for repository
+    - choice:
+        name: DOCKER_OS
+        choices:
+        - centos:7
+        - centos:8
+        - ubuntu:bionic
+        - ubuntu:focal
+        description: OS version for compilation
+    - choice:
+        name: JOB_CMAKE
+        choices:
+        - /usr/bin/cmake
+        description: path to cmake binary
+    - choice:
+        name: COMPILER
+        choices:
+        - default
+        description: compiler version
+    - choice:
+        name: CMAKE_BUILD_TYPE
+        choices:
+        - RelWithDebInfo
+        - Debug
+        description: Type of build to produce
+    - choice:
+        name: ANALYZER_OPTS
+        choices:
+        -
+        - -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON
+        - -DWITH_ASAN=ON
+        - -DWITH_ASAN=ON -DWITH_ASAN_SCOPE=ON -DWITH_UBSAN=ON
+        - -DWITH_ASAN=ON -DWITH_UBSAN=ON
+        - -DWITH_UBSAN=ON
+        - -DWITH_MSAN=ON
+        - -DWITH_VALGRIND=ON
+        description: Enable code checking
+    - string:
+        name: CMAKE_OPTS
+        default: -DWITH_ZSTD=bundled -DWITH_LZ4=bundled -DWITH_EDITLINE=bundled -DENABLE_EXPERIMENT_SYSVARS=1 -DWITH_FIDO=bundled
+        description: cmake options
+    - string:
+        name: MAKE_OPTS
+        default:
+        description: make options, like VERBOSE=1
+    - bool:
+        name: WITH_BORINGSSL
+        default: false
+        description: "Compile MySQL server with BoringSSL"
+    - choice:
+        name: DEFAULT_TESTING
+        choices:
+        - "yes"
+        - "no"
+        description: Run mysql-test-run.pl
+    - choice:
+        name: CI_FS_MTR
+        choices:
+        - "yes"
+        - "no"
+        description: Run case-insensetive MTR tests
+    - string:
+        name: MTR_ARGS
+        default: --unit-tests-report --mem --big-test --mysqld=--replica-parallel-workers=4
+        description: "mysql-test-run.pl options, for options like: --big-test --only-big-test --nounit-tests --unit-tests-report"
+    - string:
+        name: MTR_REPEAT
+        default: "1"
+        description: Run each test N number of times, --repeat=N
+    - choice:
+        name: LABEL
+        choices:
+        - docker-32gb
+        description: Run build on specified instance type
+    - choice:
+        name: FULL_MTR
+        choices:
+        - "yes"
+        - "no"
+        description: Run mtr suites based on variable WORKER_X_MTR_SUITES if the value is `no`. Otherwise the full mtr will be perfomed.
+    - string:
+        name: WORKER_1_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 1 when FULL_MTR is no. Unit tests, if requested, can be ran here only!"
+    - string:
+        name: WORKER_2_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 2 when FULL_MTR is no"
+    - string:
+        name: WORKER_3_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 3 when FULL_MTR is no"
+    - string:
+        name: WORKER_4_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 4 when FULL_MTR is no"
+    - string:
+        name: WORKER_5_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 5 when FULL_MTR is no"
+    - string:
+        name: WORKER_6_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 6 when FULL_MTR is no"
+    - string:
+        name: WORKER_7_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 7 when FULL_MTR is no"
+    - string:
+        name: WORKER_8_MTR_SUITES
+        default: ""
+        description: "Suites to be ran on worker 8 when FULL_MTR is no"
