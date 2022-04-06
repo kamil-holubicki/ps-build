@@ -44,7 +44,7 @@ pipeline {
             description: 'Enable code checking',
             name: 'ANALYZER_OPTS')
         string(
-            defaultValue: '',
+            defaultValue: '-DWITH_ZSTD=bundled -DWITH_LZ4=bundled -DWITH_EDITLINE=bundled -DENABLE_EXPERIMENT_SYSVARS=1 -DWITH_FIDO=bundled',
             description: 'cmake options',
             name: 'CMAKE_OPTS')
         string(
@@ -52,15 +52,15 @@ pipeline {
             description: 'make options, like VERBOSE=1',
             name: 'MAKE_OPTS')
         booleanParam(
-            defaultValue: false, 
-            description: 'Compile MySQL server with BoringSSL', 
-            name: 'WITH_BORINGSSL') 
+            defaultValue: false,
+            description: 'Compile MySQL server with BoringSSL',
+            name: 'WITH_BORINGSSL')
         choice(
             choices: 'yes\nno',
             description: 'Run mysql-test-run.pl',
             name: 'DEFAULT_TESTING')
         string(
-            defaultValue: '--unit-tests-report --mem --big-test',
+            defaultValue: '--unit-tests-report --mem --big-test --mysqld=--replica-parallel-workers=4',
             description: 'mysql-test-run.pl options, for options like: --big-test --only-big-test --nounit-tests --unit-tests-report',
             name: 'MTR_ARGS')
         string(
@@ -128,14 +128,14 @@ pipeline {
                         if [[ ${REPLY} != 200 ]]; then
                             # Unit tests will be executed by worker 1, so do not assign galera suites, wich are executed
                             # with less parallelism
-                            WORKER_1_MTR_SUITES=innodb_undo,test_services,service_sys_var_registration,connection_control,service_udf_registration,service_status_var_registration,interactive_utilities
-                            WORKER_2_MTR_SUITES=column_statistics,grant,rpl_mts,rpl_recovery,thread_pool
+                            WORKER_1_MTR_SUITES=main
+                            WORKER_2_MTR_SUITES=binlog_nogtid,rpl_recovery,rpl_mts,innodb_undo,grant,test_services,service_sys_var_registration,thread_pool,connection_control,column_statistics,service_status_var_registration,service_udf_registration,interactive_utilities
                             WORKER_3_MTR_SUITES=innodb,auth_sec
-                            WORKER_4_MTR_SUITES=rpl,main
-                            WORKER_5_MTR_SUITES=rpl_nogtid,rpl_gtid
-                            WORKER_6_MTR_SUITES=parts,clone,innodb_gis
-                            WORKER_7_MTR_SUITES=perfschema,component_keyring_file,binlog,innodb_fts,sys_vars,innodb_zip,x,gcol,encryption,federated,binlog_nogtid,binlog_gtid,funcs_2,information_schema,sysschema,json,opt_trace,collations,gis,query_rewrite_plugins,test_service_sql_api,secondary_engine
-                            WORKER_8_MTR_SUITES=rocksdb,rocksdb_rpl,rocksdb_stress,rocksdb_sys_vars
+                            WORKER_4_MTR_SUITES=rpl
+                            WORKER_5_MTR_SUITES=rpl_gtid,rpl_nogtid,binlog,sys_vars,funcs_2,opt_trace,json,collations,
+                            WORKER_6_MTR_SUITES=innodb_gis,perfschema,parts,clone,query_rewrite_plugins
+                            WORKER_7_MTR_SUITES=rocksdb,rocksdb_stress,rocksdb_rpl,innodb_zip,information_schema,rocksdb_sys_vars,
+                            WORKER_8_MTR_SUITES=component_keyring_file,innodb_fts,x,encryption,sysschema,binlog_gtid,gcol,federated,test_service_sql_api,gis,secondary_engine,
                         else
                             wget ${RAW_VERSION_LINK}/${BRANCH}/mysql-test/suites-groups.sh -O ${WORKSPACE}/suites-groups.sh
 

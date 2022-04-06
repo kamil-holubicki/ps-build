@@ -64,7 +64,7 @@
         description: Enable code checking
     - string:
         name: CMAKE_OPTS
-        default:
+        default: -DWITH_ZSTD=bundled -DWITH_LZ4=bundled -DWITH_EDITLINE=bundled -DENABLE_EXPERIMENT_SYSVARS=1 -DWITH_FIDO=bundled
         description: cmake options
     - string:
         name: MAKE_OPTS
@@ -82,7 +82,7 @@
         description: Run mysql-test-run.pl
     - string:
         name: MTR_ARGS
-        default: --unit-tests-report --mem --big-test
+        default: --unit-tests-report --mem --big-test --mysqld=--replica-parallel-workers=4
         description: "mysql-test-run.pl options, for options like: --big-test --only-big-test --nounit-tests --unit-tests-report"
     - string:
         name: MTR_REPEAT
