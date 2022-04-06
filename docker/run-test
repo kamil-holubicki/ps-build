@@ -96,9 +96,13 @@ docker run --rm --shm-size=20gb \
     export WITH_ROCKSDB='${WITH_ROCKSDB}'
 
     if [ -f /etc/redhat-release ]; then
-       yum update -y
-       yum install -y rsync cpanminus
+       pushd /etc/yum.repos.d/
+       sudo sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+       sudo sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+       sudo yum update -y --skip-broken --nobest
+       sudo yum install -y rsync cpanminus
        sudo cpanm Expect
+       popd
     else
         sudo apt -y update
         sudo apt -y install rsync cpanminus
