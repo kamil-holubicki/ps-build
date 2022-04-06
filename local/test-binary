@@ -195,7 +195,7 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
             MTR_ARGS_BIG=${MTR_ARGS}
             MTR_ARGS_BIG+=" --only-big-test"
             suiteNoSlash+="_bigtest"
-            TESTCASE_TIMEOUT_BIG=$((TESTCASE_TIMEOUT * 4))
+            TESTCASE_TIMEOUT_BIG=$((TESTCASE_TIMEOUT * 2))
 
             if [[ $UNIT_TESTS == "1" ]]; then
                 MTR_ARGS_BIG+=" --unit-tests-report"
