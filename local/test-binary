@@ -186,6 +186,9 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
             mount
             ls -la /dev/shm
         fi
+        end=`date +%s`
+        runtime=$((end-start))
+        echo KH,SUITE_NO_BIG,${suite},time,$runtime
 
         if [[ $BIG_TEST == "1" ]]; then
             echo "Executing big tests for suite $suite"
@@ -228,7 +231,7 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
 
         end=`date +%s`
         runtime=$((end-start))
-        echo KH,SUITE,${suite},time,$runtime
+        echo KH,SUITE_TOTAL,${suite},time,$runtime
 
     done
 fi
@@ -323,7 +326,7 @@ if [[ "${CI_FS_MTR}" = 'yes' ]]; then
 
     end=`date +%s`
     runtime=$((end-start))
-    echo KH,SUITE,CI_FS tests,time,$runtime
+    echo KH,SUITE_TOTAL,CI_FS_tests,time,$runtime
 fi
 
 # KH: this stuff will not happen now
