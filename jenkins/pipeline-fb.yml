@@ -80,6 +80,12 @@
         - "yes"
         - "no"
         description: Run mysql-test-run.pl
+    - choice:
+        name: CI_FS_MTR
+        choices:
+        - "yes"
+        - "no"
+        description: Run case-insensetive MTR tests
     - string:
         name: MTR_ARGS
         default: --unit-tests-report --mem --big-test --mysqld=--replica-parallel-workers=4

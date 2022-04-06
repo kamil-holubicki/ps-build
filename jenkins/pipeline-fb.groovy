@@ -59,6 +59,10 @@ pipeline {
             choices: 'yes\nno',
             description: 'Run mysql-test-run.pl',
             name: 'DEFAULT_TESTING')
+        choice(
+            choices: 'yes\nno',
+            description: 'Run case-insensetive MTR tests',
+            name: 'CI_FS_MTR')
         string(
             defaultValue: '--unit-tests-report --mem --big-test --mysqld=--replica-parallel-workers=4',
             description: 'mysql-test-run.pl options, for options like: --big-test --only-big-test --nounit-tests --unit-tests-report',
@@ -128,14 +132,14 @@ pipeline {
                         if [[ ${REPLY} != 200 ]]; then
                             # Unit tests will be executed by worker 1, so do not assign galera suites, wich are executed
                             # with less parallelism
-                            WORKER_1_MTR_SUITES=main
-                            WORKER_2_MTR_SUITES=binlog_nogtid,rpl_recovery,rpl_mts,innodb_undo,grant,test_services,service_sys_var_registration,thread_pool,connection_control,column_statistics,service_status_var_registration,service_udf_registration,interactive_utilities
+                            WORKER_1_MTR_SUITES=binlog_nogtid,rpl_recovery,rpl_mts,innodb_undo,grant,test_services,service_sys_var_registration,thread_pool,connection_control,column_statistics,service_status_var_registration,service_udf_registration,interactive_utilities
+                            WORKER_2_MTR_SUITES=main
                             WORKER_3_MTR_SUITES=innodb,auth_sec
                             WORKER_4_MTR_SUITES=rpl
-                            WORKER_5_MTR_SUITES=rpl_gtid,rpl_nogtid,binlog,sys_vars,funcs_2,opt_trace,json,collations,
+                            WORKER_5_MTR_SUITES=rpl_gtid,rpl_nogtid,binlog,sys_vars,funcs_2,opt_trace,json,collations
                             WORKER_6_MTR_SUITES=innodb_gis,perfschema,parts,clone,query_rewrite_plugins
-                            WORKER_7_MTR_SUITES=rocksdb,rocksdb_stress,rocksdb_rpl,innodb_zip,information_schema,rocksdb_sys_vars,
-                            WORKER_8_MTR_SUITES=component_keyring_file,innodb_fts,x,encryption,sysschema,binlog_gtid,gcol,federated,test_service_sql_api,gis,secondary_engine,
+                            WORKER_7_MTR_SUITES=rocksdb,rocksdb_stress,rocksdb_rpl,innodb_zip,information_schema,rocksdb_sys_vars
+                            WORKER_8_MTR_SUITES=component_keyring_file,innodb_fts,x,encryption,sysschema,binlog_gtid,gcol,federated,test_service_sql_api,gis,secondary_engine
                         else
                             wget ${RAW_VERSION_LINK}/${BRANCH}/mysql-test/suites-groups.sh -O ${WORKSPACE}/suites-groups.sh
 
@@ -311,8 +315,18 @@ pipeline {
                                             done
                                             echo Test: \$(date -u "+%s")
 
+                                            # Allow unit tests execution only on 1st worker if requested
+                                            # Allow case insensitive FS tests only on 1st worker if requested
+
                                             export MTR_SUITES=${WORKER_1_MTR_SUITES}
-                                            # allow unit tests execution only on 1st worker if requested
+                                            if [[ \$CI_FS_MTR == 'yes' ]]; then
+                                                if [[ ! -f /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img ]] && [[ -z \$(mount | grep /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE) ]]; then
+                                                    sudo dd if=/dev/zero of=/mnt/ci_disk_\$CMAKE_BUILD_TYPE.img bs=1G count=10
+                                                    sudo /sbin/mkfs.vfat /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img
+                                                    sudo mkdir -p /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
+                                                    sudo mount -o loop -o uid=27 -o gid=27 -o check=r /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
+                                                fi
+                                            fi
 
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
@@ -359,6 +373,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_2_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
+                                            CI_FS_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -q | wc -l) -ne 0 ]; then
@@ -403,6 +419,8 @@ pipeline {
 
                                             export MTR_SUITES=${WORKER_3_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+
+                                            CI_FS_MTR=no
 
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
@@ -449,6 +467,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_4_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
+                                            CI_FS_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -q | wc -l) -ne 0 ]; then
@@ -494,6 +514,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_5_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
+                                            CI_FS_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -q | wc -l) -ne 0 ]; then
@@ -535,6 +557,8 @@ pipeline {
                                                 sleep 5
                                             done
                                             echo Test: \$(date -u "+%s")
+
+                                            CI_FS_MTR=no
 
                                             export MTR_SUITES=${WORKER_6_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
@@ -584,6 +608,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_7_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
+                                            CI_FS_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -q | wc -l) -ne 0 ]; then
@@ -628,6 +654,8 @@ pipeline {
 
                                             export MTR_SUITES=${WORKER_8_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+
+                                            CI_FS_MTR=no
 
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
