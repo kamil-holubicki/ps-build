@@ -130,14 +130,13 @@ pipeline {
                         # Try to get suites split from repo. If not present, fallback to hardcoded.
                         REPLY=$(curl -Is ${RAW_VERSION_LINK}/${BRANCH}/mysql-test/suites-groups.sh | head -n 1 | awk '{print $2}')
                         if [[ ${REPLY} != 200 ]]; then
-                            # Unit tests will be executed by worker 1, so do not assign galera suites, wich are executed
-                            # with less parallelism
+                            # Unit tests will be executed by worker 1
                             WORKER_1_MTR_SUITES=binlog_nogtid,rpl_recovery,rpl_mts,innodb_undo,grant,test_services,service_sys_var_registration,thread_pool,connection_control,column_statistics,service_status_var_registration,service_udf_registration,interactive_utilities
                             WORKER_2_MTR_SUITES=main
                             WORKER_3_MTR_SUITES=innodb,auth_sec
                             WORKER_4_MTR_SUITES=rpl
                             WORKER_5_MTR_SUITES=rpl_gtid,rpl_nogtid,binlog,sys_vars,funcs_2,opt_trace,json,collations
-                            WORKER_6_MTR_SUITES=innodb_gis,perfschema,parts,clone,query_rewrite_plugins
+                            WORKER_6_MTR_SUITES=innodb_gis,perfschema,parts,clone,query_rewrite_plugins,funcs_1
                             WORKER_7_MTR_SUITES=rocksdb,rocksdb_stress,rocksdb_rpl,innodb_zip,information_schema,rocksdb_sys_vars
                             WORKER_8_MTR_SUITES=component_keyring_file,innodb_fts,x,encryption,sysschema,binlog_gtid,gcol,federated,test_service_sql_api,gis,secondary_engine
                         else
