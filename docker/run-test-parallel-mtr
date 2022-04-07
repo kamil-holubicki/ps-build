@@ -95,19 +95,6 @@ docker run --rm --shm-size=20gb \
     export ZEN_FS_MTR='${ZEN_FS_MTR}'
     export WITH_ROCKSDB='${WITH_ROCKSDB}'
 
-    if [ -f /etc/redhat-release ]; then
-       pushd /etc/yum.repos.d/
-       sudo sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
-       sudo sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
-       sudo yum install -y rsync cpanminus
-       sudo cpanm Expect
-       popd
-    else
-        sudo apt -y update
-        sudo apt -y install rsync cpanminus
-        sudo cpanm Expect
-    fi
-
     mv /tmp/ps/*.pem /tmp/results || true
     cp /tmp/ps/results/*.tar.gz /tmp/results
 
