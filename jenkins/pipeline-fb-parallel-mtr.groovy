@@ -120,6 +120,7 @@ pipeline {
         skipStagesAfterUnstable()
         timeout(time: 6, unit: 'DAYS')
         buildDiscarder(logRotator(numToKeepStr: '200', artifactNumToKeepStr: '200'))
+        copyArtifactPermission('fb-mysql-server-8.0-param-parallel-mtr');
     }
     stages {
         stage('Prepare') {
