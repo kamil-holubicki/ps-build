@@ -16,6 +16,10 @@
 set -o errexit
 set -o xtrace
 
+echo "Starting tests on worker ${WORKER_NO}"
+cat /proc/meminfo
+cat /proc/cpuinfo
+
 WORKDIR_ABS=$(cd ${1:-./build}; pwd -P)
 rm -fr ${WORKDIR_ABS}/PS
 mkdir -p ${WORKDIR_ABS}/PS/sql
@@ -165,10 +169,7 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
             echo "Executing normal tests for suite $suite"
 
             df -h
-            du /dev/shm
-            mount
-            ls -la /dev/shm
-            cat /proc/meminfo
+            du -sh /dev/shm
 
             MTR_ARGS_NORMAL=${MTR_ARGS}
 
@@ -188,20 +189,14 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
                 --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.${suiteNoSlash}" || true
 
             ln -s $PWD/var $PWD/var_${suiteNoSlash}
-            ls -la
             which rsync
-            ls -la /usr/bin/*
             rsync -a -L --prune-empty-dirs --include '*/' --include '*.err' --exclude '*' $PWD/var_${suiteNoSlash} $PWD/mtr_var
-            ls -la $PWD/mtr_var/
 
             killall -9 mysqld || true
             rm -rf $PWD/var_${suiteNoSlash}
-            ls -la
 
             df -h
-            du /dev/shm
-            mount
-            ls -la /dev/shm
+            du -sh /dev/shm
         fi
         end=`date +%s`
         runtime=$((end-start))
@@ -230,20 +225,14 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
                 --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.${suiteNoSlash}" || true
 
             ln -s $PWD/var $PWD/var_${suiteNoSlash}
-            ls -la
             which rsync
-            ls -la /usr/bin/*
             rsync -a -L --prune-empty-dirs --include '*/' --include '*.err' --exclude '*' $PWD/var_${suiteNoSlash} $PWD/mtr_var
-            ls -la $PWD/mtr_var/
 
             killall -9 mysqld || true
             rm -rf $PWD/var_${suiteNoSlash}
-            ls -la
 
             df -h
-            du /dev/shm
-            mount
-            ls -la /dev/shm
+            du -sh /dev/shm
         fi
 
         end=`date +%s`
@@ -253,6 +242,47 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
     done
 fi
 #<<<< main MTR execution loop ends here
+
+#
+# CI FS tests
+if [[ "${CI_FS_MTR}" = 'yes' ]]; then
+    echo "Running CI FS tests"
+    start=`date +%s`
+
+    # no --mem allowed if vardir specified
+    MTR_ARGS=${MTR_ARGS//"--mem"/""}
+
+    if [[ $BIG_TEST == "1" ]]; then
+        MTR_ARGS+=" --big-test"
+    fi
+
+    CI_TESTS=""
+    for CI_TESTS_TMP in $(grep --exclude="*.inc" --exclude="*.log" -rl . -e include/have_case_insensitive_file_system.inc | awk -F '/' '{print $NF}' | sed 's/.test//g'); do
+        CI_TESTS+=" $CI_TESTS_TMP"
+    done
+    # Requested in PS-7602
+    if [[ ${CMAKE_BUILD_TYPE} = 'Debug' ]]; then
+        CI_TESTS+=" information_schema.i_s_schema_definition_debug"
+    fi
+
+    MTR_BUILD_THREAD=auto ./mysql-test-run.pl \
+        --result-file \
+        --force ${MYSQLD_ENV} \
+        --max-test-fail=0 \
+        --suite-timeout=9999 \
+        --parallel=$(nproc) \
+        --testcase-timeout=${TESTCASE_TIMEOUT} \
+        ${MTR_ARGS} \
+        --tmpdir="/tmp/ps_mtr_tempdir" \
+        --vardir="/tmp/ci_disk_dir" \
+        ${CI_TESTS} \
+        --junit-output=${WORKDIR_ABS}/junit_ci_fs.xml \
+        --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.ci_fs" || true
+
+    end=`date +%s`
+    runtime=$((end-start))
+    echo KH,SUITE_TOTAL,CI_FS_tests,time,$runtime
+fi
 
 # KH: this stuff will not happen now
 #
@@ -306,45 +336,6 @@ if [[ "${TOKUDB_ENGINES_MTR}" = 'no' ]] && [[ "${HOTBACKUP_TESTING}" = 'no' ]] &
         --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.small" || true
 fi
 
-
-if [[ "${CI_FS_MTR}" = 'yes' ]]; then
-    echo "Running CI FS tests"
-    start=`date +%s`
-
-    # no --mem allowed if vardir specified
-    MTR_ARGS=${MTR_ARGS//"--mem"/""}
-
-    if [[ $BIG_TEST == "1" ]]; then
-        MTR_ARGS+=" --big-test"
-    fi
-
-    CI_TESTS=""
-    for CI_TESTS_TMP in $(grep --exclude="*.inc" --exclude="*.log" -rl . -e include/have_case_insensitive_file_system.inc | awk -F '/' '{print $NF}' | sed 's/.test//g'); do
-        CI_TESTS+=" $CI_TESTS_TMP"
-    done
-    # Requested in PS-7602
-    if [[ ${CMAKE_BUILD_TYPE} = 'Debug' ]]; then
-        CI_TESTS+=" information_schema.i_s_schema_definition_debug"
-    fi
-
-    MTR_BUILD_THREAD=auto ./mysql-test-run.pl \
-        --result-file \
-        --force ${MYSQLD_ENV} \
-        --max-test-fail=0 \
-        --suite-timeout=9999 \
-        --parallel=$(nproc) \
-        --testcase-timeout=${TESTCASE_TIMEOUT} \
-        ${MTR_ARGS} \
-        --tmpdir="/tmp/ps_mtr_tempdir" \
-        --vardir="/tmp/ci_disk_dir" \
-        ${CI_TESTS} \
-        --junit-output=${WORKDIR_ABS}/junit_ci_fs.xml \
-        --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.ci_fs" || true
-
-    end=`date +%s`
-    runtime=$((end-start))
-    echo KH,SUITE_TOTAL,CI_FS_tests,time,$runtime
-fi
 
 # KH: this stuff will not happen now
 if [[ ${ZEN_FS_MTR} = 'yes' ]] && [[ ${WITH_ROCKSDB} = 'ON' ]]; then

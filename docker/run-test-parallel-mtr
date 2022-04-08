@@ -6,6 +6,7 @@ set -o xtrace
 ROOT_DIR=$(cd $(dirname $0)/../sources; pwd -P)
 SCRIPTS_DIR=$(cd $(dirname $0)/../local; pwd -P)
 SOURCE_IMAGE=${1:-centos:7}
+WORKER_NO=${2:-0}
 
 if [[ ${CI_FS_MTR} == 'yes' ]]; then
     CI_FS_DOCKER_FLAG="--mount type=bind,source=/mnt/ci_disk_dir_${CMAKE_BUILD_TYPE},destination=/tmp/ci_disk_dir"
@@ -79,6 +80,7 @@ docker run --rm --shm-size=20gb \
     export MTR_SUITES='${MTR_SUITES}'
     export CI_FS_MTR='${CI_FS_MTR}'
     export KEYRING_VAULT_MTR='${KEYRING_VAULT_MTR}'
+    export WORKER_NO='${WORKER_NO}'
     export VAULT_V1_DEV_ADDRESS='http://vault-dev-v1:9200'
     export VAULT_V2_DEV_ADDRESS='http://vault-dev-v2:9400'
     export VAULT_V1_PROD_ADDRESS='https://vault-prod-v1:9300'
