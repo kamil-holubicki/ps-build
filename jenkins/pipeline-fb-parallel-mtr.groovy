@@ -76,39 +76,39 @@ pipeline {
             description: 'Run build on specified instance type',
             name: 'LABEL')
         choice(
-            choices: 'yes\nno',
-            description: 'Run mtr suites based on variable MTR_SUITES if the value is `no`. Otherwise the full mtr will be perfomed.',
+            choices: 'no\nyes',
+            description: 'Run mtr suites based on variable WORKER_X_MTR_SUITES if the value is `no`. Otherwise the full mtr will be perfomed.',
             name: 'FULL_MTR')
         string(
-            defaultValue: '',
+            defaultValue: 'binlog_nogtid,rpl_recovery,rpl_mts,innodb_undo,grant,test_services,service_sys_var_registration,thread_pool,connection_control,column_statistics,service_status_var_registration,service_udf_registration,interactive_utilities',
             description: 'Suites to be ran on worker 1 when FULL_MTR is no. Unit tests, if requested, can be ran here only!',
             name: 'WORKER_1_MTR_SUITES')
         string(
-            defaultValue: '',
+            defaultValue: 'main',
             description: 'Suites to be ran on worker 2 when FULL_MTR is no',
             name: 'WORKER_2_MTR_SUITES')
         string(
-            defaultValue: '',
+            defaultValue: 'innodb,auth_sec',
             description: 'Suites to be ran on worker 3 when FULL_MTR is no',
             name: 'WORKER_3_MTR_SUITES')
         string(
-            defaultValue: '',
+            defaultValue: 'rpl',
             description: 'Suites to be ran on worker 4 when FULL_MTR is no',
             name: 'WORKER_4_MTR_SUITES')
         string(
-            defaultValue: '',
+            defaultValue: 'rpl_gtid,rpl_nogtid,binlog,sys_vars,funcs_2,opt_trace,json,collations',
             description: 'Suites to be ran on worker 5 when FULL_MTR is no',
             name: 'WORKER_5_MTR_SUITES')
         string(
-            defaultValue: '',
+            defaultValue: 'innodb_gis,perfschema,parts,clone,query_rewrite_plugins,funcs_1',
             description: 'Suites to be ran on worker 6 when FULL_MTR is no',
             name: 'WORKER_6_MTR_SUITES')
         string(
-            defaultValue: '',
+            defaultValue: 'rocksdb,rocksdb_stress,rocksdb_rpl,innodb_zip,information_schema,rocksdb_sys_vars',
             description: 'Suites to be ran on worker 7 when FULL_MTR is no',
             name: 'WORKER_7_MTR_SUITES')
         string(
-            defaultValue: '',
+            defaultValue: 'component_keyring_file,innodb_fts,x,encryption,sysschema,binlog_gtid,gcol,federated,test_service_sql_api,gis,secondary_engine',
             description: 'Suites to be ran on worker 8 when FULL_MTR is no',
             name: 'WORKER_8_MTR_SUITES')
     }
