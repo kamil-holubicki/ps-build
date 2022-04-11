@@ -56,6 +56,7 @@ if [[ "${KEYRING_VAULT_MTR}" == 'yes' ]] && [[ ${DOCKER_OS} != 'centos:6' ]] && 
 fi
 
 docker run --rm --shm-size=20gb \
+    --tmpfs /dev/shm:rw,exec \
     --security-opt seccomp=unconfined \
     --sysctl net.ipv6.conf.lo.disable_ipv6=0 \
     --mount type=bind,source=${ROOT_DIR},destination=/tmp/ps \
