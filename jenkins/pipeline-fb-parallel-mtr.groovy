@@ -299,52 +299,54 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
-                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
-                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                        sh '''
-                                            sudo git reset --hard
-                                            sudo git clean -xdf
-                                            rm -rf sources/results
-                                            sudo git -C sources reset --hard || :
-                                            sudo git -C sources clean -xdf   || :
+                            catchError(buildResult: 'UNSTABLE') { 
+                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                    git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
+                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                            sh '''
+                                                sudo git reset --hard
+                                                sudo git clean -xdf
+                                                rm -rf sources/results
+                                                sudo git -C sources reset --hard || :
+                                                sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                sleep 5
-                                            done
-                                            echo Test: \$(date -u "+%s")
+                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                    sleep 5
+                                                done
+                                                echo Test: \$(date -u "+%s")
 
-                                            # Allow unit tests execution only on 1st worker if requested
-                                            # Allow case insensitive FS tests only on 1st worker if requested
+                                                # Allow unit tests execution only on 1st worker if requested
+                                                # Allow case insensitive FS tests only on 1st worker if requested
 
-                                            export MTR_SUITES=${WORKER_1_MTR_SUITES}
-                                            if [[ \$CI_FS_MTR == 'yes' ]]; then
-                                                if [[ ! -f /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img ]] && [[ -z \$(mount | grep /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE) ]]; then
-                                                    sudo dd if=/dev/zero of=/mnt/ci_disk_\$CMAKE_BUILD_TYPE.img bs=1G count=10
-                                                    sudo /sbin/mkfs.vfat /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img
-                                                    sudo mkdir -p /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
-                                                    sudo mount -o loop -o uid=27 -o gid=27 -o check=r /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
+                                                export MTR_SUITES=${WORKER_1_MTR_SUITES}
+                                                if [[ \$CI_FS_MTR == 'yes' ]]; then
+                                                    if [[ ! -f /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img ]] && [[ -z \$(mount | grep /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE) ]]; then
+                                                        sudo dd if=/dev/zero of=/mnt/ci_disk_\$CMAKE_BUILD_TYPE.img bs=1G count=10
+                                                        sudo /sbin/mkfs.vfat /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img
+                                                        sudo mkdir -p /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
+                                                        sudo mount -o loop -o uid=27 -o gid=27 -o check=r /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
+                                                    fi
                                                 fi
-                                            fi
 
-                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                            sg docker -c "
-                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                    docker ps -q | xargs docker stop --time 1 || :
-                                                fi
-                                                ulimit -a
-                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 1
-                                            "
+                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                                sg docker -c "
+                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                        docker ps -q | xargs docker stop --time 1 || :
+                                                    fi
+                                                    ulimit -a
+                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 1
+                                                "
 
-                                            echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                sleep 5
-                                            done
-                                        '''
+                                                echo Archive test: \$(date -u "+%s")
+                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                    sleep 5
+                                                done
+                                            '''
+                                        }
                                     }
                                 }
-                            }
+                            } // catch
                         }
                 } // 1
                 stage('Test - 2') {
@@ -354,44 +356,46 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
-                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
-                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                        sh '''
-                                            sudo git reset --hard
-                                            sudo git clean -xdf
-                                            rm -rf sources/results
-                                            sudo git -C sources reset --hard || :
-                                            sudo git -C sources clean -xdf   || :
+                            catchError(buildResult: 'UNSTABLE') { 
+                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                    git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
+                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                            sh '''
+                                                sudo git reset --hard
+                                                sudo git clean -xdf
+                                                rm -rf sources/results
+                                                sudo git -C sources reset --hard || :
+                                                sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                sleep 5
-                                            done
-                                            echo Test: \$(date -u "+%s")
+                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                    sleep 5
+                                                done
+                                                echo Test: \$(date -u "+%s")
 
-                                            export MTR_SUITES=${WORKER_2_MTR_SUITES}
-                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                                export MTR_SUITES=${WORKER_2_MTR_SUITES}
+                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                            CI_FS_MTR=no
+                                                CI_FS_MTR=no
 
-                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                            sg docker -c "
-                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                    docker ps -q | xargs docker stop --time 1 || :
-                                                fi
-                                                ulimit -a
-                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 2
-                                            "
+                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                                sg docker -c "
+                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                        docker ps -q | xargs docker stop --time 1 || :
+                                                    fi
+                                                    ulimit -a
+                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 2
+                                                "
 
-                                            echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                sleep 5
-                                            done
-                                        '''
+                                                echo Archive test: \$(date -u "+%s")
+                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                    sleep 5
+                                                done
+                                            '''
+                                        }
                                     }
                                 }
-                            }
+                            } // catch
                         }
                 } // 2
                 stage('Test - 3') {
@@ -401,44 +405,46 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
-                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
-                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                        sh '''
-                                            sudo git reset --hard
-                                            sudo git clean -xdf
-                                            rm -rf sources/results
-                                            sudo git -C sources reset --hard || :
-                                            sudo git -C sources clean -xdf   || :
+                            catchError(buildResult: 'UNSTABLE') { 
+                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                    git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
+                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                            sh '''
+                                                sudo git reset --hard
+                                                sudo git clean -xdf
+                                                rm -rf sources/results
+                                                sudo git -C sources reset --hard || :
+                                                sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                sleep 5
-                                            done
-                                            echo Test: \$(date -u "+%s")
+                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                    sleep 5
+                                                done
+                                                echo Test: \$(date -u "+%s")
 
-                                            export MTR_SUITES=${WORKER_3_MTR_SUITES}
-                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                                export MTR_SUITES=${WORKER_3_MTR_SUITES}
+                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                            CI_FS_MTR=no
+                                                CI_FS_MTR=no
 
-                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                            sg docker -c "
-                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                    docker ps -q | xargs docker stop --time 1 || :
-                                                fi
-                                                ulimit -a
-                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 3
-                                            "
+                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                                sg docker -c "
+                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                        docker ps -q | xargs docker stop --time 1 || :
+                                                    fi
+                                                    ulimit -a
+                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 3
+                                                "
 
-                                            echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                sleep 5
-                                            done
-                                        '''
+                                                echo Archive test: \$(date -u "+%s")
+                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                    sleep 5
+                                                done
+                                            '''
+                                        }
                                     }
                                 }
-                            }
+                            } // catch
                         }
                 } // 3
                 stage('Test - 4') {
@@ -448,44 +454,46 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
-                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
-                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                        sh '''
-                                            sudo git reset --hard
-                                            sudo git clean -xdf
-                                            rm -rf sources/results
-                                            sudo git -C sources reset --hard || :
-                                            sudo git -C sources clean -xdf   || :
+                            catchError(buildResult: 'UNSTABLE') { 
+                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                    git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
+                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                            sh '''
+                                                sudo git reset --hard
+                                                sudo git clean -xdf
+                                                rm -rf sources/results
+                                                sudo git -C sources reset --hard || :
+                                                sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                sleep 5
-                                            done
-                                            echo Test: \$(date -u "+%s")
+                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                    sleep 5
+                                                done
+                                                echo Test: \$(date -u "+%s")
 
-                                            export MTR_SUITES=${WORKER_4_MTR_SUITES}
-                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                                export MTR_SUITES=${WORKER_4_MTR_SUITES}
+                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                            CI_FS_MTR=no
+                                                CI_FS_MTR=no
 
-                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                            sg docker -c "
-                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                    docker ps -q | xargs docker stop --time 1 || :
-                                                fi
-                                                ulimit -a
-                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 4
-                                            "
+                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                                sg docker -c "
+                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                        docker ps -q | xargs docker stop --time 1 || :
+                                                    fi
+                                                    ulimit -a
+                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 4
+                                                "
 
-                                            echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                sleep 5
-                                            done
-                                        '''
+                                                echo Archive test: \$(date -u "+%s")
+                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                    sleep 5
+                                                done
+                                            '''
+                                        }
                                     }
                                 }
-                            }
+                            } // catch
                         }
                 } // 4
                 stage('Test - 5') {
@@ -495,44 +503,46 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
-                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
-                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                        sh '''
-                                            sudo git reset --hard
-                                            sudo git clean -xdf
-                                            rm -rf sources/results
-                                            sudo git -C sources reset --hard || :
-                                            sudo git -C sources clean -xdf   || :
+                            catchError(buildResult: 'UNSTABLE') { 
+                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                    git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
+                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                            sh '''
+                                                sudo git reset --hard
+                                                sudo git clean -xdf
+                                                rm -rf sources/results
+                                                sudo git -C sources reset --hard || :
+                                                sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                sleep 5
-                                            done
-                                            echo Test: \$(date -u "+%s")
+                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                    sleep 5
+                                                done
+                                                echo Test: \$(date -u "+%s")
 
-                                            export MTR_SUITES=${WORKER_5_MTR_SUITES}
-                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                                export MTR_SUITES=${WORKER_5_MTR_SUITES}
+                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                            CI_FS_MTR=no
+                                                CI_FS_MTR=no
 
-                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                            sg docker -c "
-                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                    docker ps -q | xargs docker stop --time 1 || :
-                                                fi
-                                                ulimit -a
-                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 5
-                                            "
+                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                                sg docker -c "
+                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                        docker ps -q | xargs docker stop --time 1 || :
+                                                    fi
+                                                    ulimit -a
+                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 5
+                                                "
 
-                                            echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                sleep 5
-                                            done
-                                        '''
+                                                echo Archive test: \$(date -u "+%s")
+                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                    sleep 5
+                                                done
+                                            '''
+                                        }
                                     }
                                 }
-                            }
+                            } // catch
                         }
                 } // 5
                 stage('Test - 6') {
@@ -542,44 +552,46 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
-                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
-                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                        sh '''
-                                            sudo git reset --hard
-                                            sudo git clean -xdf
-                                            rm -rf sources/results
-                                            sudo git -C sources reset --hard || :
-                                            sudo git -C sources clean -xdf   || :
+                            catchError(buildResult: 'UNSTABLE') { 
+                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                    git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
+                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                            sh '''
+                                                sudo git reset --hard
+                                                sudo git clean -xdf
+                                                rm -rf sources/results
+                                                sudo git -C sources reset --hard || :
+                                                sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                sleep 5
-                                            done
-                                            echo Test: \$(date -u "+%s")
+                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                    sleep 5
+                                                done
+                                                echo Test: \$(date -u "+%s")
 
-                                            CI_FS_MTR=no
+                                                CI_FS_MTR=no
 
-                                            export MTR_SUITES=${WORKER_6_MTR_SUITES}
-                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                                export MTR_SUITES=${WORKER_6_MTR_SUITES}
+                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                            sg docker -c "
-                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                    docker ps -q | xargs docker stop --time 1 || :
-                                                fi
-                                                ulimit -a
-                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 6
-                                            "
+                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                                sg docker -c "
+                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                        docker ps -q | xargs docker stop --time 1 || :
+                                                    fi
+                                                    ulimit -a
+                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 6
+                                                "
 
-                                            echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                sleep 5
-                                            done
-                                        '''
+                                                echo Archive test: \$(date -u "+%s")
+                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                    sleep 5
+                                                done
+                                            '''
+                                        }
                                     }
                                 }
-                            }
+                            } // catch
                         }
                 } // 6
                 stage('Test - 7') {
@@ -589,44 +601,46 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
-                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
-                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                        sh '''
-                                            sudo git reset --hard
-                                            sudo git clean -xdf
-                                            rm -rf sources/results
-                                            sudo git -C sources reset --hard || :
-                                            sudo git -C sources clean -xdf   || :
+                            catchError(buildResult: 'UNSTABLE') { 
+                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                    git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
+                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                            sh '''
+                                                sudo git reset --hard
+                                                sudo git clean -xdf
+                                                rm -rf sources/results
+                                                sudo git -C sources reset --hard || :
+                                                sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                sleep 5
-                                            done
-                                            echo Test: \$(date -u "+%s")
+                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                    sleep 5
+                                                done
+                                                echo Test: \$(date -u "+%s")
 
-                                            export MTR_SUITES=${WORKER_7_MTR_SUITES}
-                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                                export MTR_SUITES=${WORKER_7_MTR_SUITES}
+                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                            CI_FS_MTR=no
+                                                CI_FS_MTR=no
 
-                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                            sg docker -c "
-                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                    docker ps -q | xargs docker stop --time 1 || :
-                                                fi
-                                                ulimit -a
-                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 7
-                                            "
+                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                                sg docker -c "
+                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                        docker ps -q | xargs docker stop --time 1 || :
+                                                    fi
+                                                    ulimit -a
+                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 7
+                                                "
 
-                                            echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                sleep 5
-                                            done
-                                        '''
+                                                echo Archive test: \$(date -u "+%s")
+                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                    sleep 5
+                                                done
+                                            '''
+                                        }
                                     }
                                 }
-                            }
+                            } // catch
                         }
                 } // 7
                 stage('Test - 8') {
@@ -636,44 +650,46 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
-                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
-                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                        sh '''
-                                            sudo git reset --hard
-                                            sudo git clean -xdf
-                                            rm -rf sources/results
-                                            sudo git -C sources reset --hard || :
-                                            sudo git -C sources clean -xdf   || :
+                            catchError(buildResult: 'UNSTABLE') { 
+                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                    git branch: 'parallel-fb', url: 'https://github.com/kamil-holubicki/ps-build'
+                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                            sh '''
+                                                sudo git reset --hard
+                                                sudo git clean -xdf
+                                                rm -rf sources/results
+                                                sudo git -C sources reset --hard || :
+                                                sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                sleep 5
-                                            done
-                                            echo Test: \$(date -u "+%s")
+                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                    sleep 5
+                                                done
+                                                echo Test: \$(date -u "+%s")
 
-                                            export MTR_SUITES=${WORKER_8_MTR_SUITES}
-                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                                export MTR_SUITES=${WORKER_8_MTR_SUITES}
+                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                            CI_FS_MTR=no
+                                                CI_FS_MTR=no
 
-                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                            sg docker -c "
-                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                    docker ps -q | xargs docker stop --time 1 || :
-                                                fi
-                                                ulimit -a
-                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 8
-                                            "
+                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                                sg docker -c "
+                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                        docker ps -q | xargs docker stop --time 1 || :
+                                                    fi
+                                                    ulimit -a
+                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 8
+                                                "
 
-                                            echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                sleep 5
-                                            done
-                                        '''
+                                                echo Archive test: \$(date -u "+%s")
+                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                    sleep 5
+                                                done
+                                            '''
+                                        }
                                     }
                                 }
-                            }
+                            } // catch
                         }
                 } // 8
             } //parallel
