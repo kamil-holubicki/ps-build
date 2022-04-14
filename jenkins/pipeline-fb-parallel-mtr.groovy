@@ -313,14 +313,17 @@ pipeline {
                         beforeAgent true
                         expression { (env.WORKER_1_MTR_SUITES?.trim()) }
                     }
-                    agent { label LABEL }
+                    agent { label 'micro-amazon' }
                     steps {
                         catchError(buildResult: 'UNSTABLE') { 
                             script {
                                 WORKER_1_ABORTED = true
+                                echo "WORKER_1_ABORTED = true"
                             }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
                                 git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
+                                // echo "Aborting intentionally"
+                                // error('Aborting the build.')
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -367,6 +370,7 @@ pipeline {
                             }
                             script {
                                 WORKER_1_ABORTED = false
+                                echo "WORKER_1_ABORTED = false"
                             }
                         }
                     }
@@ -782,6 +786,7 @@ pipeline {
             script {
                 if (env.ALLOW_ABORTED_WORKERS_RERUN == 'true') {
                     echo "allow aborted reruns ${env.ALLOW_ABORTED_WORKERS_RERUN}"
+                    echo "WORKER_1_ABORTED: $WORKER_1_ABORTED"
                     def rerunNeeded = false
                     def WORKER_1_RERUN_SUITES = ""
                     def WORKER_2_RERUN_SUITES = ""
@@ -793,6 +798,7 @@ pipeline {
                     def WORKER_8_RERUN_SUITES = ""
 
                     if (WORKER_1_ABORTED) {
+                        echo "rerun worker 1"
                         WORKER_1_RERUN_SUITES = env.WORKER_1_MTR_SUITES
                         rerunNeeded = true
                     }
@@ -824,10 +830,10 @@ pipeline {
                         WORKER_8_RERUN_SUITES = env.WORKER_8_MTR_SUITES
                         rerunNeeded = true
                     }
-
+                    echo "rerun needed: $rerunNeeded"
                     if (rerunNeeded) {
                         echo "restarting aborted workers"
-                        build job: 'fb-mysql-server-8.0-pipeline-parallel-mtr',
+                        build job: 'fb-mysql-server-8.0-pipeline-parallel-mtr-experimental',
                         wait: false,
                         parameters: [
                             string(name:'BUILD_NUMBER_BINARIES', value: BUILD_NUMBER_BINARIES_FOR_RERUN),
