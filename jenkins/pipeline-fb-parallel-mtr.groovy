@@ -319,7 +319,7 @@ pipeline {
                             WORKER_1_ABORTED = true
                         }
                         timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                            git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
+                            git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
                             echo "Aborting intentionally"
                             error('Aborting the build.')
                             withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
@@ -382,7 +382,7 @@ pipeline {
                                 WORKER_2_ABORTED = true
                             }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -435,7 +435,7 @@ pipeline {
                                 WORKER_3_ABORTED = true
                             }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -488,7 +488,7 @@ pipeline {
                                 WORKER_4_ABORTED = true
                             }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -541,7 +541,7 @@ pipeline {
                                 WORKER_5_ABORTED = true
                             }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -594,7 +594,7 @@ pipeline {
                                 WORKER_6_ABORTED = true
                             }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -647,7 +647,7 @@ pipeline {
                                 WORKER_7_ABORTED = true
                             }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -700,7 +700,7 @@ pipeline {
                                 WORKER_8_ABORTED = true
                             }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
                                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                                         sh '''
@@ -768,8 +768,51 @@ pipeline {
             script {
                 if (env.ALLOW_ABORTED_WORKERS_RERUN == 'true') {
                     echo "allow aborted reruns ${env.ALLOW_ABORTED_WORKERS_RERUN}"
+                    def rerunNeeded = false
+                    def WORKER_1_RERUN_SUITES = ""
+                    def WORKER_2_RERUN_SUITES = ""
+                    def WORKER_3_RERUN_SUITES = ""
+                    def WORKER_4_RERUN_SUITES = ""
+                    def WORKER_5_RERUN_SUITES = ""
+                    def WORKER_6_RERUN_SUITES = ""
+                    def WORKER_7_RERUN_SUITES = ""
+                    def WORKER_8_RERUN_SUITES = ""
+
                     if (WORKER_1_ABORTED) {
-                        echo "restarting worker 1"
+                        WORKER_1_RERUN_SUITES = env.WORKER_1_MTR_SUITES
+                        rerunNeeded = true
+                    }
+                    if (WORKER_2_ABORTED) {
+                        WORKER_2_RERUN_SUITES = env.WORKER_2_MTR_SUITES
+                        rerunNeeded = true
+                    }
+                    if (WORKER_3_ABORTED) {
+                        WORKER_3_RERUN_SUITES = env.WORKER_3_MTR_SUITES
+                        rerunNeeded = true
+                    }
+                    if (WORKER_4_ABORTED) {
+                        WORKER_4_RERUN_SUITES = env.WORKER_4_MTR_SUITES
+                        rerunNeeded = true
+                    }
+                    if (WORKER_5_ABORTED) {
+                        WORKER_5_RERUN_SUITES = env.WORKER_5_MTR_SUITES
+                        rerunNeeded = true
+                    }
+                    if (WORKER_6_ABORTED) {
+                        WORKER_6_RERUN_SUITES = env.WORKER_6_MTR_SUITES
+                        rerunNeeded = true
+                    }
+                    if (WORKER_7_ABORTED) {
+                        WORKER_7_RERUN_SUITES = env.WORKER_7_MTR_SUITES
+                        rerunNeeded = true
+                    }
+                    if (WORKER_8_ABORTED) {
+                        WORKER_8_RERUN_SUITES = env.WORKER_8_MTR_SUITES
+                        rerunNeeded = true
+                    }
+
+                    if (rerunNeeded) {
+                        echo "restarting aborted workers"
                         build job: 'fb-mysql-server-8.0-pipeline-parallel-mtr',
                         wait: false,
                         parameters: [
@@ -790,14 +833,14 @@ pipeline {
                             string(name:'MTR_REPEAT', value: env.MTR_REPEAT),
                             string(name:'LABEL', value: env.LABEL),
                             string(name:'FULL_MTR', value:'no'),
-                            string(name:'WORKER_1_MTR_SUITES', value: env.WORKER_1_MTR_SUITES),
-                            string(name:'WORKER_2_MTR_SUITES', value: ""),
-                            string(name:'WORKER_3_MTR_SUITES', value: ""),
-                            string(name:'WORKER_4_MTR_SUITES', value: ""),
-                            string(name:'WORKER_5_MTR_SUITES', value: ""),
-                            string(name:'WORKER_6_MTR_SUITES', value: ""),
-                            string(name:'WORKER_7_MTR_SUITES', value: ""),
-                            string(name:'WORKER_8_MTR_SUITES', value: ""),
+                            string(name:'WORKER_1_MTR_SUITES', value: WORKER_1_RERUN_SUITES),
+                            string(name:'WORKER_2_MTR_SUITES', value: WORKER_2_RERUN_SUITES),
+                            string(name:'WORKER_3_MTR_SUITES', value: WORKER_3_RERUN_SUITES),
+                            string(name:'WORKER_4_MTR_SUITES', value: WORKER_4_RERUN_SUITES),
+                            string(name:'WORKER_5_MTR_SUITES', value: WORKER_5_RERUN_SUITES),
+                            string(name:'WORKER_6_MTR_SUITES', value: WORKER_6_RERUN_SUITES),
+                            string(name:'WORKER_7_MTR_SUITES', value: WORKER_7_RERUN_SUITES),
+                            string(name:'WORKER_8_MTR_SUITES', value: WORKER_8_RERUN_SUITES),
                             booleanParam(name: 'ALLOW_ABORTED_WORKERS_RERUN', value: false)
                         ]
                     }
