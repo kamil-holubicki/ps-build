@@ -1,5 +1,5 @@
 - job:
-    name: fb-mysql-server-8.0-param-parallel-mtr
+    name: fb-mysql-server-8.0-param-parallel-mtr-experimental
     project-type: matrix
     defaults: global
     description: |
@@ -123,6 +123,10 @@
         name: WORKER_8_MTR_SUITES
         default: "component_keyring_file,innodb_fts,x,encryption,sysschema,binlog_gtid,gcol,federated,test_service_sql_api,gis,secondary_engine"
         description: "Suites to be ran on worker 8 when FULL_MTR is no"
+    - bool:
+        name: ALLOW_ABORTED_WORKERS_RERUN
+        default: true
+        description: "Rerun aborted workers"
     axes:
       - axis:
          type: user-defined
@@ -139,7 +143,7 @@
           - ubuntu:focal
     builders:
     - trigger-builds:
-      - project: fb-mysql-server-8.0-pipeline-parallel-mtr
+      - project: fb-mysql-server-8.0-pipeline-parallel-mtr-experimental
         current-parameters: true
         predefined-parameters: |
           DOCKER_OS=${DOCKER_OS}

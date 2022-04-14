@@ -1,5 +1,5 @@
 - job:
-    name: fb-mysql-server-8.0-pipeline-parallel-mtr
+    name: fb-mysql-server-8.0-pipeline-parallel-mtr-experimental
     project-type: pipeline
     description: |
         Do not edit this job through the web!
