@@ -717,7 +717,7 @@ pipeline {
                     echo "restarting worker 1"
                     build job: 'fb-mysql-server-8.0-pipeline-parallel-mtr',
                     wait: false,
-                    parameters[
+                    parameters: [
                         string(name:'BUILD_NUMBER_BINARIES', value: ${BUILD_NUMBER}),
                     ]
                 }
