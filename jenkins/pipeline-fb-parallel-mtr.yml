@@ -9,7 +9,7 @@
         - git:
             url: https://github.com/kamil-holubicki/ps-build
             branches:
-            - "parallel-fb"
+            - "parallel-fb-aborted-retry"
             wipe-workspace: false
       lightweight-checkout: true
       script-path: jenkins/pipeline-fb-parallel-mtr.groovy
