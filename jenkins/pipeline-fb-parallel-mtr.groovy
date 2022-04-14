@@ -766,39 +766,42 @@ pipeline {
     post {
         always {
             script {
-                if (env.ALLOW_ABORTED_WORKERS_RERUN && WORKER_1_ABORTED) {
-                    echo "restarting worker 1"
-                    build job: 'fb-mysql-server-8.0-pipeline-parallel-mtr',
-                    wait: false,
-                    parameters: [
-                        string(name:'BUILD_NUMBER_BINARIES', value: BUILD_NUMBER_BINARIES_FOR_RERUN),
-                        string(name:'GIT_REPO', value: env.GIT_REPO),
-                        string(name:'BRANCH', value: env.BRANCH),
-                        string(name:'DOCKER_OS', value: env.DOCKER_OS),
-                        string(name:'JOB_CMAKE', value: env.JOB_CMAKE),
-                        string(name:'COMPILER', value: env.COMPILER),
-                        string(name:'CMAKE_BUILD_TYPE', value: env.CMAKE_BUILD_TYPE),
-                        string(name:'ANALYZER_OPTS', value: env.ANALYZER_OPTS),
-                        string(name:'CMAKE_OPTS', value: env.CMAKE_OPTS),
-                        string(name:'MAKE_OPTS', value: env.MAKE_OPTS),
-                        string(name:'WITH_BORINGSSL', value: env.WITH_BORINGSSL),
-                        string(name:'DEFAULT_TESTING', value: env.DEFAULT_TESTING),
-                        string(name:'CI_FS_MTR', value: env.CI_FS_MTR),
-                        string(name:'MTR_ARGS', value: env.MTR_ARGS),
-                        string(name:'MTR_REPEAT', value: env.MTR_REPEAT),
-                        string(name:'LABEL', value: env.LABEL),
-                        string(name:'FULL_MTR', value:'no'),
-                        string(name:'WORKER_1_MTR_SUITES', value: env.WORKER_1_MTR_SUITES),
-                        string(name:'WORKER_2_MTR_SUITES', value: ""),
-                        string(name:'WORKER_3_MTR_SUITES', value: ""),
-                        string(name:'WORKER_4_MTR_SUITES', value: ""),
-                        string(name:'WORKER_5_MTR_SUITES', value: ""),
-                        string(name:'WORKER_6_MTR_SUITES', value: ""),
-                        string(name:'WORKER_7_MTR_SUITES', value: ""),
-                        string(name:'WORKER_8_MTR_SUITES', value: ""),
-                        booleanParam(name: 'ALLOW_ABORTED_WORKERS_RERUN', value: false)
-                    ]
-                }
+                if (env.ALLOW_ABORTED_WORKERS_RERUN == 'true') {
+                    echo "allow aborted reruns ${env.ALLOW_ABORTED_WORKERS_RERUN}"
+                    if (WORKER_1_ABORTED) {
+                        echo "restarting worker 1"
+                        build job: 'fb-mysql-server-8.0-pipeline-parallel-mtr',
+                        wait: false,
+                        parameters: [
+                            string(name:'BUILD_NUMBER_BINARIES', value: BUILD_NUMBER_BINARIES_FOR_RERUN),
+                            string(name:'GIT_REPO', value: env.GIT_REPO),
+                            string(name:'BRANCH', value: env.BRANCH),
+                            string(name:'DOCKER_OS', value: env.DOCKER_OS),
+                            string(name:'JOB_CMAKE', value: env.JOB_CMAKE),
+                            string(name:'COMPILER', value: env.COMPILER),
+                            string(name:'CMAKE_BUILD_TYPE', value: env.CMAKE_BUILD_TYPE),
+                            string(name:'ANALYZER_OPTS', value: env.ANALYZER_OPTS),
+                            string(name:'CMAKE_OPTS', value: env.CMAKE_OPTS),
+                            string(name:'MAKE_OPTS', value: env.MAKE_OPTS),
+                            booleanParam(name:'WITH_BORINGSSL', value: env.WITH_BORINGSSL),
+                            string(name:'DEFAULT_TESTING', value: env.DEFAULT_TESTING),
+                            string(name:'CI_FS_MTR', value: env.CI_FS_MTR),
+                            string(name:'MTR_ARGS', value: env.MTR_ARGS),
+                            string(name:'MTR_REPEAT', value: env.MTR_REPEAT),
+                            string(name:'LABEL', value: env.LABEL),
+                            string(name:'FULL_MTR', value:'no'),
+                            string(name:'WORKER_1_MTR_SUITES', value: env.WORKER_1_MTR_SUITES),
+                            string(name:'WORKER_2_MTR_SUITES', value: ""),
+                            string(name:'WORKER_3_MTR_SUITES', value: ""),
+                            string(name:'WORKER_4_MTR_SUITES', value: ""),
+                            string(name:'WORKER_5_MTR_SUITES', value: ""),
+                            string(name:'WORKER_6_MTR_SUITES', value: ""),
+                            string(name:'WORKER_7_MTR_SUITES', value: ""),
+                            string(name:'WORKER_8_MTR_SUITES', value: ""),
+                            booleanParam(name: 'ALLOW_ABORTED_WORKERS_RERUN', value: false)
+                        ]
+                    }
+                }  // env.ALLOW_ABORTED_WORKERS_RERUN
             }
             sh '''
                 echo Finish: \$(date -u "+%s")
