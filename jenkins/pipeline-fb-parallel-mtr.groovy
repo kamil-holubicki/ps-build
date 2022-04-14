@@ -1,5 +1,15 @@
-pipeline_timeout = 24
+def pipeline_timeout = 24
+def JENKINS_SCRIPTS_BRANCH = 'parallel-fb-aborted-retry'
+def JENKINS_SCRIPTS_REPO = 'https://github.com/kamil-holubicki/ps-build'
 def WORKER_1_ABORTED = false
+def WORKER_2_ABORTED = false
+def WORKER_3_ABORTED = false
+def WORKER_4_ABORTED = false
+def WORKER_5_ABORTED = false
+def WORKER_6_ABORTED = false
+def WORKER_7_ABORTED = false
+def WORKER_8_ABORTED = false
+def BUILD_NUMBER_BINARIES_FOR_RERUN = 0
 
 if (
     (params.ANALYZER_OPTS.contains('-DWITH_ASAN=ON')) ||
@@ -10,10 +20,6 @@ if (params.ANALYZER_OPTS.contains('-DWITH_VALGRIND=ON'))
     { pipeline_timeout = 144 }
 
 pipeline {
-    environment {
-        JENKINS_SCRIPTS_BRANCH = 'parallel-fb-aborted-retry'
-        JENKINS_SCRIPTS_REPO = 'https://github.com/kamil-holubicki/ps-build'
-    }
     parameters {
         string(
             defaultValue: '',
@@ -116,6 +122,10 @@ pipeline {
             defaultValue: 'component_keyring_file,innodb_fts,x,encryption,sysschema,binlog_gtid,gcol,federated,test_service_sql_api,gis,secondary_engine',
             description: 'Suites to be ran on worker 8 when FULL_MTR is no',
             name: 'WORKER_8_MTR_SUITES')
+        booleanParam(
+            defaultValue: true,
+            description: 'Rerun aborted workers',
+            name: 'ALLOW_ABORTED_WORKERS_RERUN')
     }
     agent {
         label 'micro-amazon'
@@ -188,7 +198,7 @@ pipeline {
                     echo "WORKER_8_MTR_SUITES: ${env.WORKER_8_MTR_SUITES}"
 
                     env.BUILD_TAG_BINARIES = "jenkins-${env.JOB_NAME}-${env.BUILD_NUMBER_BINARIES}"
-
+                    BUILD_NUMBER_BINARIES_FOR_RERUN = env.BUILD_NUMBER_BINARIES
                     sh 'printenv'
                 }
             }
@@ -227,7 +237,7 @@ pipeline {
                                 fi
                                 rm -f ${WORKSPACE}/VERSION-${BUILD_NUMBER}
                             '''
-                            git branch: env.JENKINS_SCRIPTS_BRANCH, url: env.JENKINS_SCRIPTS_REPO
+                            git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
                             sh '''
                                 # sudo is needed for better node recovery after compilation failure
                                 # if building failed on compilation stage directory will have files owned by docker user
@@ -292,73 +302,74 @@ pipeline {
                 }
                 script {
                     env.BUILD_TAG_BINARIES = env.BUILD_TAG
+                    BUILD_NUMBER_BINARIES_FOR_RERUN = env.BUILD_NUMBER
                 }
             }
         }
         stage('Test') {
             parallel {
                 stage('Test - 1') {
-                        when {
-                            beforeAgent true
-                            expression { (env.WORKER_1_MTR_SUITES?.trim()) }
+                    when {
+                        beforeAgent true
+                        expression { (env.WORKER_1_MTR_SUITES?.trim()) }
+                    }
+                    agent { label 'micro-amazon' }
+                    steps {
+                        script {
+                            WORKER_1_ABORTED = true
                         }
-                        agent { label 'micro-amazon' }
-                        steps {
-                            script {
-                                WORKER_1_ABORTED = true
-                            }
-                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
-                                echo "Aborting intentionally"
-                                error('Aborting the build.')
-                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                        sh '''
-                                            sudo git reset --hard
-                                            sudo git clean -xdf
-                                            rm -rf sources/results
-                                            sudo git -C sources reset --hard || :
-                                            sudo git -C sources clean -xdf   || :
+                        timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                            git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
+                            echo "Aborting intentionally"
+                            error('Aborting the build.')
+                            withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                    sh '''
+                                        sudo git reset --hard
+                                        sudo git clean -xdf
+                                        rm -rf sources/results
+                                        sudo git -C sources reset --hard || :
+                                        sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                sleep 5
-                                            done
-                                            echo Test: \$(date -u "+%s")
+                                        until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            sleep 5
+                                        done
+                                        echo Test: \$(date -u "+%s")
 
-                                            # Allow unit tests execution only on 1st worker if requested
-                                            # Allow case insensitive FS tests only on 1st worker if requested
+                                        # Allow unit tests execution only on 1st worker if requested
+                                        # Allow case insensitive FS tests only on 1st worker if requested
 
-                                            export MTR_SUITES=${WORKER_1_MTR_SUITES}
-                                            if [[ \$CI_FS_MTR == 'yes' ]]; then
-                                                if [[ ! -f /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img ]] && [[ -z \$(mount | grep /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE) ]]; then
-                                                    sudo dd if=/dev/zero of=/mnt/ci_disk_\$CMAKE_BUILD_TYPE.img bs=1G count=10
-                                                    sudo /sbin/mkfs.vfat /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img
-                                                    sudo mkdir -p /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
-                                                    sudo mount -o loop -o uid=27 -o gid=27 -o check=r /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
-                                                fi
+                                        export MTR_SUITES=${WORKER_1_MTR_SUITES}
+                                        if [[ \$CI_FS_MTR == 'yes' ]]; then
+                                            if [[ ! -f /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img ]] && [[ -z \$(mount | grep /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE) ]]; then
+                                                sudo dd if=/dev/zero of=/mnt/ci_disk_\$CMAKE_BUILD_TYPE.img bs=1G count=10
+                                                sudo /sbin/mkfs.vfat /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img
+                                                sudo mkdir -p /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
+                                                sudo mount -o loop -o uid=27 -o gid=27 -o check=r /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
                                             fi
+                                        fi
 
-                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                            sg docker -c "
-                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                    docker ps -q | xargs docker stop --time 1 || :
-                                                fi
-                                                ulimit -a
-                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 1
-                                            "
+                                        aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                        sg docker -c "
+                                            if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                docker ps -q | xargs docker stop --time 1 || :
+                                            fi
+                                            ulimit -a
+                                            ./docker/run-test-parallel-mtr ${DOCKER_OS} 1
+                                        "
 
-                                            echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                sleep 5
-                                            done
-                                        '''
-                                    }
+                                        echo Archive test: \$(date -u "+%s")
+                                        until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                            sleep 5
+                                        done
+                                    '''
                                 }
                             }
-                            script {
-                                WORKER_1_ABORTED = false
-                            }
                         }
+                        script {
+                            WORKER_1_ABORTED = false
+                        }
+                    }
                 } // 1
                 stage('Test - 2') {
                         when {
@@ -367,6 +378,9 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
+                            script {
+                                WORKER_2_ABORTED = true
+                            }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
                                 git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
@@ -405,6 +419,9 @@ pipeline {
                                     }
                                 }
                             }
+                            script {
+                                WORKER_2_ABORTED = false
+                            }
                         }
                 } // 2
                 stage('Test - 3') {
@@ -414,6 +431,9 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
+                            script {
+                                WORKER_3_ABORTED = true
+                            }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
                                 git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
@@ -452,6 +472,9 @@ pipeline {
                                     }
                                 }
                             }
+                            script {
+                                WORKER_3_ABORTED = false
+                            }
                         }
                 } // 3
                 stage('Test - 4') {
@@ -461,6 +484,9 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
+                            script {
+                                WORKER_4_ABORTED = true
+                            }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
                                 git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
@@ -499,6 +525,9 @@ pipeline {
                                     }
                                 }
                             }
+                            script {
+                                WORKER_4_ABORTED = true
+                            }
                         }
                 } // 4
                 stage('Test - 5') {
@@ -508,6 +537,9 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
+                            script {
+                                WORKER_5_ABORTED = true
+                            }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
                                 git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
@@ -546,6 +578,9 @@ pipeline {
                                     }
                                 }
                             }
+                            script {
+                                WORKER_5_ABORTED = false
+                            }
                         }
                 } // 5
                 stage('Test - 6') {
@@ -555,6 +590,9 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
+                            script {
+                                WORKER_6_ABORTED = true
+                            }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
                                 git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
@@ -593,6 +631,9 @@ pipeline {
                                     }
                                 }
                             }
+                            script {
+                                WORKER_6_ABORTED = false
+                            }
                         }
                 } // 6
                 stage('Test - 7') {
@@ -602,6 +643,9 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
+                            script {
+                                WORKER_7_ABORTED = true
+                            }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
                                 git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
@@ -640,6 +684,9 @@ pipeline {
                                     }
                                 }
                             }
+                            script {
+                                WORKER_7_ABORTED = false
+                            }
                         }
                 } // 7
                 stage('Test - 8') {
@@ -649,6 +696,9 @@ pipeline {
                         }
                         agent { label LABEL }
                         steps {
+                            script {
+                                WORKER_8_ABORTED = true
+                            }
                             timeout(time: pipeline_timeout, unit: 'HOURS')  {
                                 git branch: 'parallel-fb-aborted-retry', url: 'https://github.com/kamil-holubicki/ps-build'
                                 withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
@@ -687,6 +737,9 @@ pipeline {
                                     }
                                 }
                             }
+                            script {
+                                WORKER_8_ABORTED = false
+                            }
                         }
                 } // 8
             } //parallel
@@ -713,12 +766,37 @@ pipeline {
     post {
         always {
             script {
-                if (WORKER_1_ABORTED) {
+                if (env.ALLOW_ABORTED_WORKERS_RERUN && WORKER_1_ABORTED) {
                     echo "restarting worker 1"
                     build job: 'fb-mysql-server-8.0-pipeline-parallel-mtr',
                     wait: false,
                     parameters: [
-                        string(name:'BUILD_NUMBER_BINARIES', value: env.BUILD_NUMBER),
+                        string(name:'BUILD_NUMBER_BINARIES', value: BUILD_NUMBER_BINARIES_FOR_RERUN),
+                        string(name:'GIT_REPO', value: env.GIT_REPO),
+                        string(name:'BRANCH', value: env.BRANCH),
+                        string(name:'DOCKER_OS', value: env.DOCKER_OS),
+                        string(name:'JOB_CMAKE', value: env.JOB_CMAKE),
+                        string(name:'COMPILER', value: env.COMPILER),
+                        string(name:'CMAKE_BUILD_TYPE', value: env.CMAKE_BUILD_TYPE),
+                        string(name:'ANALYZER_OPTS', value: env.ANALYZER_OPTS),
+                        string(name:'CMAKE_OPTS', value: env.CMAKE_OPTS),
+                        string(name:'MAKE_OPTS', value: env.MAKE_OPTS),
+                        string(name:'WITH_BORINGSSL', value: env.WITH_BORINGSSL),
+                        string(name:'DEFAULT_TESTING', value: env.DEFAULT_TESTING),
+                        string(name:'CI_FS_MTR', value: env.CI_FS_MTR),
+                        string(name:'MTR_ARGS', value: env.MTR_ARGS),
+                        string(name:'MTR_REPEAT', value: env.MTR_REPEAT),
+                        string(name:'LABEL', value: env.LABEL),
+                        string(name:'FULL_MTR', value:'no'),
+                        string(name:'WORKER_1_MTR_SUITES', value: env.WORKER_1_MTR_SUITES),
+                        string(name:'WORKER_2_MTR_SUITES', value: ""),
+                        string(name:'WORKER_3_MTR_SUITES', value: ""),
+                        string(name:'WORKER_4_MTR_SUITES', value: ""),
+                        string(name:'WORKER_5_MTR_SUITES', value: ""),
+                        string(name:'WORKER_6_MTR_SUITES', value: ""),
+                        string(name:'WORKER_7_MTR_SUITES', value: ""),
+                        string(name:'WORKER_8_MTR_SUITES', value: ""),
+                        booleanParam(name: 'ALLOW_ABORTED_WORKERS_RERUN', value: false)
                     ]
                 }
             }

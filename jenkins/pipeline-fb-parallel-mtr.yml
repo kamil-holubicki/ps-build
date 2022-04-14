@@ -136,3 +136,7 @@
         name: WORKER_8_MTR_SUITES
         default: "component_keyring_file,innodb_fts,x,encryption,sysschema,binlog_gtid,gcol,federated,test_service_sql_api,gis,secondary_engine"
         description: "Suites to be ran on worker 8 when FULL_MTR is no"
+    - bool:
+        name: ALLOW_ABORTED_WORKERS_RERUN
+        default: true
+        description: "Rerun aborted workers"
