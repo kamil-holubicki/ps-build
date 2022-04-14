@@ -718,7 +718,7 @@ pipeline {
                     build job: 'fb-mysql-server-8.0-pipeline-parallel-mtr',
                     wait: false,
                     parameters: [
-                        string(name:'BUILD_NUMBER_BINARIES', value: ${BUILD_NUMBER}),
+                        string(name:'BUILD_NUMBER_BINARIES', value: env.BUILD_NUMBER),
                     ]
                 }
             }
