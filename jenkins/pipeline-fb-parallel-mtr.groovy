@@ -313,7 +313,7 @@ pipeline {
                         beforeAgent true
                         expression { (env.WORKER_1_MTR_SUITES?.trim()) }
                     }
-                    agent { label 'micro-amazon' }
+                    agent { label LABEL }
                     steps {
                         catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
                             script {
