@@ -288,7 +288,7 @@ pipeline {
                 beforeAgent true
                 expression { env.BUILD_NUMBER_BINARIES == '' }
             }
-            agent { label 'micro-amazon' }
+            agent { label LABEL }
             steps {
                 timeout(time: 60, unit: 'MINUTES')  {
                     retry(3) {
@@ -315,7 +315,7 @@ pipeline {
                     }
                     agent { label 'micro-amazon' }
                     steps {
-                        catchError(buildResult: 'UNSTABLE') { 
+                        catchError(buildResult: 'UNSTABLE') {
                             script {
                                 WORKER_1_ABORTED = true
                                 echo "WORKER_1_ABORTED = true"
@@ -376,389 +376,403 @@ pipeline {
                     }
                 } // 1
                 stage('Test - 2') {
-                        when {
-                            beforeAgent true
-                            expression { (env.WORKER_2_MTR_SUITES?.trim()) }
-                        }
-                        agent { label LABEL }
-                        steps {
-                            catchError(buildResult: 'UNSTABLE') { 
-                                script {
-                                    WORKER_2_ABORTED = true
-                                }
-                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                    git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
-                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                            sh '''
-                                                sudo git reset --hard
-                                                sudo git clean -xdf
-                                                rm -rf sources/results
-                                                sudo git -C sources reset --hard || :
-                                                sudo git -C sources clean -xdf   || :
+                    when {
+                        beforeAgent true
+                        expression { (env.WORKER_2_MTR_SUITES?.trim()) }
+                    }
+                    agent { label LABEL }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE') {
+                            script {
+                                WORKER_2_ABORTED = true
+                                echo "WORKER_3_ABORTED = true"
+                            }
+                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
+                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                        sh '''
+                                            sudo git reset --hard
+                                            sudo git clean -xdf
+                                            rm -rf sources/results
+                                            sudo git -C sources reset --hard || :
+                                            sudo git -C sources clean -xdf   || :
 
-                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                    sleep 5
-                                                done
-                                                echo Test: \$(date -u "+%s")
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                sleep 5
+                                            done
+                                            echo Test: \$(date -u "+%s")
 
-                                                export MTR_SUITES=${WORKER_2_MTR_SUITES}
-                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                            export MTR_SUITES=${WORKER_2_MTR_SUITES}
+                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                                CI_FS_MTR=no
+                                            CI_FS_MTR=no
 
-                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                                sg docker -c "
-                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                        docker ps -q | xargs docker stop --time 1 || :
-                                                    fi
-                                                    ulimit -a
-                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 2
-                                                "
+                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                            sg docker -c "
+                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                    docker ps -q | xargs docker stop --time 1 || :
+                                                fi
+                                                ulimit -a
+                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 2
+                                            "
 
-                                                echo Archive test: \$(date -u "+%s")
-                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                    sleep 5
-                                                done
-                                            '''
-                                        }
+                                            echo Archive test: \$(date -u "+%s")
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                sleep 5
+                                            done
+                                        '''
                                     }
                                 }
-                                script {
-                                    WORKER_2_ABORTED = false
-                                }
+                            }
+                            script {
+                                WORKER_2_ABORTED = false
+                                echo "WORKER_2_ABORTED = false"
                             }
                         }
+                    }
                 } // 2
                 stage('Test - 3') {
-                        when {
-                            beforeAgent true
-                            expression { (env.WORKER_3_MTR_SUITES?.trim()) }
-                        }
-                        agent { label LABEL }
-                        steps {
-                            catchError(buildResult: 'UNSTABLE') { 
-                                script {
-                                    WORKER_3_ABORTED = true
-                                }
-                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                    git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
-                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                            sh '''
-                                                sudo git reset --hard
-                                                sudo git clean -xdf
-                                                rm -rf sources/results
-                                                sudo git -C sources reset --hard || :
-                                                sudo git -C sources clean -xdf   || :
+                    when {
+                        beforeAgent true
+                        expression { (env.WORKER_3_MTR_SUITES?.trim()) }
+                    }
+                    agent { label LABEL }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE') {
+                            script {
+                                WORKER_3_ABORTED = true
+                                echo "WORKER_3_ABORTED = true"
+                            }
+                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
+                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                        sh '''
+                                            sudo git reset --hard
+                                            sudo git clean -xdf
+                                            rm -rf sources/results
+                                            sudo git -C sources reset --hard || :
+                                            sudo git -C sources clean -xdf   || :
 
-                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                    sleep 5
-                                                done
-                                                echo Test: \$(date -u "+%s")
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                sleep 5
+                                            done
+                                            echo Test: \$(date -u "+%s")
 
-                                                export MTR_SUITES=${WORKER_3_MTR_SUITES}
-                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                            export MTR_SUITES=${WORKER_3_MTR_SUITES}
+                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                                CI_FS_MTR=no
+                                            CI_FS_MTR=no
 
-                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                                sg docker -c "
-                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                        docker ps -q | xargs docker stop --time 1 || :
-                                                    fi
-                                                    ulimit -a
-                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 3
-                                                "
+                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                            sg docker -c "
+                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                    docker ps -q | xargs docker stop --time 1 || :
+                                                fi
+                                                ulimit -a
+                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 3
+                                            "
 
-                                                echo Archive test: \$(date -u "+%s")
-                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                    sleep 5
-                                                done
-                                            '''
-                                        }
+                                            echo Archive test: \$(date -u "+%s")
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                sleep 5
+                                            done
+                                        '''
                                     }
                                 }
-                                script {
-                                    WORKER_3_ABORTED = false
-                                }
+                            }
+                            script {
+                                WORKER_3_ABORTED = false
+                                echo "WORKER_3_ABORTED = false"
                             }
                         }
+                    }
                 } // 3
                 stage('Test - 4') {
-                        when {
-                            beforeAgent true
-                            expression { (env.WORKER_4_MTR_SUITES?.trim()) }
-                        }
-                        agent { label LABEL }
-                        steps {
-                            catchError(buildResult: 'UNSTABLE') { 
-                                script {
-                                    WORKER_4_ABORTED = true
-                                }
-                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                    git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
-                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                            sh '''
-                                                sudo git reset --hard
-                                                sudo git clean -xdf
-                                                rm -rf sources/results
-                                                sudo git -C sources reset --hard || :
-                                                sudo git -C sources clean -xdf   || :
+                    when {
+                        beforeAgent true
+                        expression { (env.WORKER_4_MTR_SUITES?.trim()) }
+                    }
+                    agent { label LABEL }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE') {
+                            script {
+                                WORKER_4_ABORTED = true
+                                echo "WORKER_4_ABORTED = true"
+                            }
+                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
+                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                        sh '''
+                                            sudo git reset --hard
+                                            sudo git clean -xdf
+                                            rm -rf sources/results
+                                            sudo git -C sources reset --hard || :
+                                            sudo git -C sources clean -xdf   || :
 
-                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                    sleep 5
-                                                done
-                                                echo Test: \$(date -u "+%s")
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                sleep 5
+                                            done
+                                            echo Test: \$(date -u "+%s")
 
-                                                export MTR_SUITES=${WORKER_4_MTR_SUITES}
-                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                            export MTR_SUITES=${WORKER_4_MTR_SUITES}
+                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                                CI_FS_MTR=no
+                                            CI_FS_MTR=no
 
-                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                                sg docker -c "
-                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                        docker ps -q | xargs docker stop --time 1 || :
-                                                    fi
-                                                    ulimit -a
-                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 4
-                                                "
+                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                            sg docker -c "
+                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                    docker ps -q | xargs docker stop --time 1 || :
+                                                fi
+                                                ulimit -a
+                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 4
+                                            "
 
-                                                echo Archive test: \$(date -u "+%s")
-                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                    sleep 5
-                                                done
-                                            '''
-                                        }
+                                            echo Archive test: \$(date -u "+%s")
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                sleep 5
+                                            done
+                                        '''
                                     }
                                 }
-                                script {
-                                    WORKER_4_ABORTED = true
-                                }
+                            }
+                            script {
+                                WORKER_4_ABORTED = true
+                                echo "WORKER_4_ABORTED = false"
                             }
                         }
+                    }
                 } // 4
                 stage('Test - 5') {
-                        when {
-                            beforeAgent true
-                            expression { (env.WORKER_5_MTR_SUITES?.trim()) }
-                        }
-                        agent { label LABEL }
-                        steps {
-                            catchError(buildResult: 'UNSTABLE') { 
-                                script {
-                                    WORKER_5_ABORTED = true
-                                }
-                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                    git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
-                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                            sh '''
-                                                sudo git reset --hard
-                                                sudo git clean -xdf
-                                                rm -rf sources/results
-                                                sudo git -C sources reset --hard || :
-                                                sudo git -C sources clean -xdf   || :
+                    when {
+                        beforeAgent true
+                        expression { (env.WORKER_5_MTR_SUITES?.trim()) }
+                    }
+                    agent { label LABEL }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE') {
+                            script {
+                                WORKER_5_ABORTED = true
+                                echo "WORKER_5_ABORTED = true"
+                            }
+                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
+                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                        sh '''
+                                            sudo git reset --hard
+                                            sudo git clean -xdf
+                                            rm -rf sources/results
+                                            sudo git -C sources reset --hard || :
+                                            sudo git -C sources clean -xdf   || :
 
-                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                    sleep 5
-                                                done
-                                                echo Test: \$(date -u "+%s")
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                sleep 5
+                                            done
+                                            echo Test: \$(date -u "+%s")
 
-                                                export MTR_SUITES=${WORKER_5_MTR_SUITES}
-                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                            export MTR_SUITES=${WORKER_5_MTR_SUITES}
+                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                                CI_FS_MTR=no
+                                            CI_FS_MTR=no
 
-                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                                sg docker -c "
-                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                        docker ps -q | xargs docker stop --time 1 || :
-                                                    fi
-                                                    ulimit -a
-                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 5
-                                                "
+                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                            sg docker -c "
+                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                    docker ps -q | xargs docker stop --time 1 || :
+                                                fi
+                                                ulimit -a
+                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 5
+                                            "
 
-                                                echo Archive test: \$(date -u "+%s")
-                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                    sleep 5
-                                                done
-                                            '''
-                                        }
+                                            echo Archive test: \$(date -u "+%s")
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                sleep 5
+                                            done
+                                        '''
                                     }
                                 }
-                                script {
-                                    WORKER_5_ABORTED = false
-                                }
+                            }
+                            script {
+                                WORKER_5_ABORTED = false
+                                echo "WORKER_5_ABORTED = false"
                             }
                         }
+                    }
                 } // 5
                 stage('Test - 6') {
-                        when {
-                            beforeAgent true
-                            expression { (env.WORKER_6_MTR_SUITES?.trim()) }
-                        }
-                        agent { label LABEL }
-                        steps {
-                            catchError(buildResult: 'UNSTABLE') { 
-                                script {
-                                    WORKER_6_ABORTED = true
-                                }
-                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                    git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
-                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                            sh '''
-                                                sudo git reset --hard
-                                                sudo git clean -xdf
-                                                rm -rf sources/results
-                                                sudo git -C sources reset --hard || :
-                                                sudo git -C sources clean -xdf   || :
+                    when {
+                        beforeAgent true
+                        expression { (env.WORKER_6_MTR_SUITES?.trim()) }
+                    }
+                    agent { label LABEL }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE') {
+                            script {
+                                WORKER_6_ABORTED = true
+                                echo "WORKER_6_ABORTED = true"
+                            }
+                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
+                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                        sh '''
+                                            sudo git reset --hard
+                                            sudo git clean -xdf
+                                            rm -rf sources/results
+                                            sudo git -C sources reset --hard || :
+                                            sudo git -C sources clean -xdf   || :
 
-                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                    sleep 5
-                                                done
-                                                echo Test: \$(date -u "+%s")
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                sleep 5
+                                            done
+                                            echo Test: \$(date -u "+%s")
 
-                                                CI_FS_MTR=no
+                                            CI_FS_MTR=no
 
-                                                export MTR_SUITES=${WORKER_6_MTR_SUITES}
-                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                            export MTR_SUITES=${WORKER_6_MTR_SUITES}
+                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                                sg docker -c "
-                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                        docker ps -q | xargs docker stop --time 1 || :
-                                                    fi
-                                                    ulimit -a
-                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 6
-                                                "
+                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                            sg docker -c "
+                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                    docker ps -q | xargs docker stop --time 1 || :
+                                                fi
+                                                ulimit -a
+                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 6
+                                            "
 
-                                                echo Archive test: \$(date -u "+%s")
-                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                    sleep 5
-                                                done
-                                            '''
-                                        }
+                                            echo Archive test: \$(date -u "+%s")
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                sleep 5
+                                            done
+                                        '''
                                     }
                                 }
-                                script {
-                                    WORKER_6_ABORTED = false
-                                }
+                            }
+                            script {
+                                WORKER_6_ABORTED = false
+                                echo "WORKER_6_ABORTED = false"
                             }
                         }
+                    }
                 } // 6
                 stage('Test - 7') {
-                        when {
-                            beforeAgent true
-                            expression { (env.WORKER_7_MTR_SUITES?.trim()) }
-                        }
-                        agent { label LABEL }
-                        steps {
-                            catchError(buildResult: 'UNSTABLE') { 
-                                script {
-                                    WORKER_7_ABORTED = true
-                                }
-                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                    git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
-                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                            sh '''
-                                                sudo git reset --hard
-                                                sudo git clean -xdf
-                                                rm -rf sources/results
-                                                sudo git -C sources reset --hard || :
-                                                sudo git -C sources clean -xdf   || :
+                    when {
+                        beforeAgent true
+                        expression { (env.WORKER_7_MTR_SUITES?.trim()) }
+                    }
+                    agent { label LABEL }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE') {
+                            script {
+                                WORKER_7_ABORTED = true
+                                echo "WORKER_7_ABORTED = true"
+                            }
+                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
+                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                        sh '''
+                                            sudo git reset --hard
+                                            sudo git clean -xdf
+                                            rm -rf sources/results
+                                            sudo git -C sources reset --hard || :
+                                            sudo git -C sources clean -xdf   || :
 
-                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                    sleep 5
-                                                done
-                                                echo Test: \$(date -u "+%s")
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                sleep 5
+                                            done
+                                            echo Test: \$(date -u "+%s")
 
-                                                export MTR_SUITES=${WORKER_7_MTR_SUITES}
-                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                            export MTR_SUITES=${WORKER_7_MTR_SUITES}
+                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                                CI_FS_MTR=no
+                                            CI_FS_MTR=no
 
-                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                                sg docker -c "
-                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                        docker ps -q | xargs docker stop --time 1 || :
-                                                    fi
-                                                    ulimit -a
-                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 7
-                                                "
+                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                            sg docker -c "
+                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                    docker ps -q | xargs docker stop --time 1 || :
+                                                fi
+                                                ulimit -a
+                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 7
+                                            "
 
-                                                echo Archive test: \$(date -u "+%s")
-                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                    sleep 5
-                                                done
-                                            '''
-                                        }
+                                            echo Archive test: \$(date -u "+%s")
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                sleep 5
+                                            done
+                                        '''
                                     }
                                 }
-                                script {
-                                    WORKER_7_ABORTED = false
-                                }
+                            }
+                            script {
+                                WORKER_7_ABORTED = false
+                                echo "WORKER_7_ABORTED = false"
                             }
                         }
+                    }
                 } // 7
                 stage('Test - 8') {
-                        when {
-                            beforeAgent true
-                            expression { (env.WORKER_8_MTR_SUITES?.trim()) }
-                        }
-                        agent { label LABEL }
-                        steps {
-                            catchError(buildResult: 'UNSTABLE') { 
-                                script {
-                                    WORKER_8_ABORTED = true
-                                }
-                                timeout(time: pipeline_timeout, unit: 'HOURS')  {
-                                    git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
-                                    withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
-                                        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                                            sh '''
-                                                sudo git reset --hard
-                                                sudo git clean -xdf
-                                                rm -rf sources/results
-                                                sudo git -C sources reset --hard || :
-                                                sudo git -C sources clean -xdf   || :
+                    when {
+                        beforeAgent true
+                        expression { (env.WORKER_8_MTR_SUITES?.trim()) }
+                    }
+                    agent { label LABEL }
+                    steps {
+                        catchError(buildResult: 'UNSTABLE') {
+                            script {
+                                WORKER_8_ABORTED = true
+                                echo "WORKER_8_ABORTED = true"
+                            }
+                            timeout(time: pipeline_timeout, unit: 'HOURS')  {
+                                git branch: JENKINS_SCRIPTS_BRANCH, url: JENKINS_SCRIPTS_REPO
+                                withCredentials([string(credentialsId: 'MTR_VAULT_TOKEN', variable: 'MTR_VAULT_TOKEN')]) {
+                                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'c8b933cd-b8ca-41d5-b639-33fe763d3f68', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                                        sh '''
+                                            sudo git reset --hard
+                                            sudo git clean -xdf
+                                            rm -rf sources/results
+                                            sudo git -C sources reset --hard || :
+                                            sudo git -C sources clean -xdf   || :
 
-                                                until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
-                                                    sleep 5
-                                                done
-                                                echo Test: \$(date -u "+%s")
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                                sleep 5
+                                            done
+                                            echo Test: \$(date -u "+%s")
 
-                                                export MTR_SUITES=${WORKER_8_MTR_SUITES}
-                                                MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
+                                            export MTR_SUITES=${WORKER_8_MTR_SUITES}
+                                            MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
 
-                                                CI_FS_MTR=no
+                                            CI_FS_MTR=no
 
-                                                aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
-                                                sg docker -c "
-                                                    if [ \$(docker ps -q | wc -l) -ne 0 ]; then
-                                                        docker ps -q | xargs docker stop --time 1 || :
-                                                    fi
-                                                    ulimit -a
-                                                    ./docker/run-test-parallel-mtr ${DOCKER_OS} 8
-                                                "
+                                            aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
+                                            sg docker -c "
+                                                if [ \$(docker ps -q | wc -l) -ne 0 ]; then
+                                                    docker ps -q | xargs docker stop --time 1 || :
+                                                fi
+                                                ulimit -a
+                                                ./docker/run-test-parallel-mtr ${DOCKER_OS} 8
+                                            "
 
-                                                echo Archive test: \$(date -u "+%s")
-                                                until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
-                                                    sleep 5
-                                                done
-                                            '''
-                                        }
+                                            echo Archive test: \$(date -u "+%s")
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                                sleep 5
+                                            done
+                                        '''
                                     }
                                 }
-                                script {
-                                    WORKER_8_ABORTED = false
-                                }
+                            }
+                            script {
+                                WORKER_8_ABORTED = false
+                                echo "WORKER_8_ABORTED = false"
                             }
                         }
+                    }
                 } // 8
             } //parallel
         }
@@ -803,30 +817,37 @@ pipeline {
                         rerunNeeded = true
                     }
                     if (WORKER_2_ABORTED) {
+                        echo "rerun worker 2"
                         WORKER_2_RERUN_SUITES = env.WORKER_2_MTR_SUITES
                         rerunNeeded = true
                     }
                     if (WORKER_3_ABORTED) {
+                        echo "rerun worker 3"
                         WORKER_3_RERUN_SUITES = env.WORKER_3_MTR_SUITES
                         rerunNeeded = true
                     }
                     if (WORKER_4_ABORTED) {
+                        echo "rerun worker 4"
                         WORKER_4_RERUN_SUITES = env.WORKER_4_MTR_SUITES
                         rerunNeeded = true
                     }
                     if (WORKER_5_ABORTED) {
+                        echo "rerun worker 5"
                         WORKER_5_RERUN_SUITES = env.WORKER_5_MTR_SUITES
                         rerunNeeded = true
                     }
                     if (WORKER_6_ABORTED) {
+                        echo "rerun worker 6"
                         WORKER_6_RERUN_SUITES = env.WORKER_6_MTR_SUITES
                         rerunNeeded = true
                     }
                     if (WORKER_7_ABORTED) {
+                        echo "rerun worker 7"
                         WORKER_7_RERUN_SUITES = env.WORKER_7_MTR_SUITES
                         rerunNeeded = true
                     }
                     if (WORKER_8_ABORTED) {
+                        echo "rerun worker 8"
                         WORKER_8_RERUN_SUITES = env.WORKER_8_MTR_SUITES
                         rerunNeeded = true
                     }
