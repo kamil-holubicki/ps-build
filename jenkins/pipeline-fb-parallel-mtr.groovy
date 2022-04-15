@@ -540,7 +540,7 @@ pipeline {
                                 }
                             }
                             script {
-                                WORKER_4_ABORTED = true
+                                WORKER_4_ABORTED = false
                                 echo "WORKER_4_ABORTED = false"
                             }
                         }
