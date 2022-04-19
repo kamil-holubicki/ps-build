@@ -315,7 +315,7 @@ pipeline {
                     }
                     agent { label LABEL }
                     steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        catchError(buildResult: 'UNSTABLE') {
                             script {
                                 WORKER_1_ABORTED = true
                                 echo "WORKER_1_ABORTED = true"
@@ -382,7 +382,7 @@ pipeline {
                     }
                     agent { label LABEL }
                     steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        catchError(buildResult: 'UNSTABLE') {
                             script {
                                 WORKER_2_ABORTED = true
                                 echo "WORKER_3_ABORTED = true"
@@ -439,7 +439,7 @@ pipeline {
                     }
                     agent { label LABEL }
                     steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        catchError(buildResult: 'UNSTABLE') {
                             script {
                                 WORKER_3_ABORTED = true
                                 echo "WORKER_3_ABORTED = true"
@@ -496,7 +496,7 @@ pipeline {
                     }
                     agent { label LABEL }
                     steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        catchError(buildResult: 'UNSTABLE') {
                             script {
                                 WORKER_4_ABORTED = true
                                 echo "WORKER_4_ABORTED = true"
@@ -553,7 +553,7 @@ pipeline {
                     }
                     agent { label LABEL }
                     steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        catchError(buildResult: 'UNSTABLE') {
                             script {
                                 WORKER_5_ABORTED = true
                                 echo "WORKER_5_ABORTED = true"
@@ -610,7 +610,7 @@ pipeline {
                     }
                     agent { label LABEL }
                     steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        catchError(buildResult: 'UNSTABLE') {
                             script {
                                 WORKER_6_ABORTED = true
                                 echo "WORKER_6_ABORTED = true"
@@ -667,7 +667,7 @@ pipeline {
                     }
                     agent { label LABEL }
                     steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        catchError(buildResult: 'UNSTABLE') {
                             script {
                                 WORKER_7_ABORTED = true
                                 echo "WORKER_7_ABORTED = true"
@@ -724,7 +724,7 @@ pipeline {
                     }
                     agent { label LABEL }
                     steps {
-                        catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                        catchError(buildResult: 'UNSTABLE') {
                             script {
                                 WORKER_8_ABORTED = true
                                 echo "WORKER_8_ABORTED = true"
