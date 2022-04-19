@@ -156,12 +156,12 @@
     - shell: |
         sudo find . -name "*.xml" -o -name "*.log" -delete
     - copyartifact:
-        project: fb-mysql-server-8.0-pipeline-parallel-mtr
+        project: fb-mysql-server-8.0-pipeline-parallel-mtr-experimental
         which-build: specific-build
-        build-number: "${TRIGGERED_BUILD_NUMBERS_fb_mysql_server_8_0_pipeline_parallel_mtr}"
+        build-number: "${TRIGGERED_BUILD_NUMBERS_fb_mysql_server_8_0_pipeline_parallel_mtr_experimental}"
         do-not-fingerprint: true
     - shell: |
-        echo "${TRIGGERED_BUILD_NUMBERS_fb_mysql_server_8_0_pipeline_parallel_mtr}" > PIPELINE_BUILD_NUMBER
+        echo "${TRIGGERED_BUILD_NUMBERS_fb_mysql_server_8_0_pipeline_parallel_mtr_experimental}" > PIPELINE_BUILD_NUMBER
         gunzip build.log.gz
     publishers:
     - raw:
