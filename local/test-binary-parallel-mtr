@@ -159,13 +159,33 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
 #>>>> main MTR execution loop starts here
     ARRAY_MTR_SUITES=($(echo $MTR_SUITES | sed 's/,/ /g'))
     for suite in "${ARRAY_MTR_SUITES[@]}"; do
+        only_big_tests_this=$ONLY_BIG_TEST
+        big_tests_this=$BIG_TEST
+
+        # suite may be in form:
+        # main
+        # main|big
+        # main|nobig
+        arrSuite=(${suite//|/ })
+        suite=${arrSuite[0]}
+        big=${arrSuite[1]}
+
+        if [[ "${big}" == "big" ]]; then
+            only_big_tests_this=1
+            # if big tests are executed or not depends on --big-tests
+        fi
+        if [[ "${big}" == "nobig" ]]; then
+            # if normal tests are executed or not depends on --big-tests
+            big_tests_this=0
+        fi
+
         WORKER=${PARALLEL}
         suiteNoSlash=${suite//"/"/"_"}
         echo "Running MTR suite: $suite (noslash: $suiteNoSlash)"
 
         start=`date +%s`
 
-        if [[ $ONLY_BIG_TEST == "0" ]]; then
+        if [[ $only_big_tests_this == "0" ]]; then
             echo "Executing normal tests for suite $suite"
 
             df -h
@@ -202,7 +222,7 @@ if [[ "${DEFAULT_TESTING}" != "no" ]]; then
         runtime=$((end-start))
         echo KH,SUITE_NO_BIG,${suite},time,$runtime
 
-        if [[ $BIG_TEST == "1" ]]; then
+        if [[ $big_tests_this == "1" ]]; then
             echo "Executing big tests for suite $suite"
             MTR_ARGS_BIG=${MTR_ARGS}
             MTR_ARGS_BIG+=" --only-big-test"
