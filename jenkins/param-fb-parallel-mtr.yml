@@ -97,15 +97,15 @@
         description: "Suites to be ran on worker 1 when FULL_MTR is no. Unit tests, if requested, can be ran here only!"
     - string:
         name: WORKER_2_MTR_SUITES
-        default: "main"
+        default: "main|big"
         description: "Suites to be ran on worker 2 when FULL_MTR is no"
     - string:
         name: WORKER_3_MTR_SUITES
-        default: "innodb,auth_sec"
+        default: "innodb,main|nobig"
         description: "Suites to be ran on worker 3 when FULL_MTR is no"
     - string:
         name: WORKER_4_MTR_SUITES
-        default: "rpl"
+        default: "rpl,auth_sec"
         description: "Suites to be ran on worker 4 when FULL_MTR is no"
     - string:
         name: WORKER_5_MTR_SUITES

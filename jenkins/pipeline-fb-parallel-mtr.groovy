@@ -148,9 +148,9 @@ pipeline {
                         if [[ ${REPLY} != 200 ]]; then
                             # Unit tests will be executed by worker 1
                             WORKER_1_MTR_SUITES=binlog_nogtid,rpl_recovery,rpl_mts,innodb_undo,grant,test_services,service_sys_var_registration,thread_pool,connection_control,column_statistics,service_status_var_registration,service_udf_registration,interactive_utilities
-                            WORKER_2_MTR_SUITES=main
-                            WORKER_3_MTR_SUITES=innodb,auth_sec
-                            WORKER_4_MTR_SUITES=rpl
+                            WORKER_2_MTR_SUITES=main|big
+                            WORKER_3_MTR_SUITES=innodb,main|nobig
+                            WORKER_4_MTR_SUITES=rpl,auth_sec
                             WORKER_5_MTR_SUITES=rpl_gtid,rpl_nogtid,binlog,sys_vars,funcs_2,opt_trace,json,collations
                             WORKER_6_MTR_SUITES=innodb_gis,perfschema,parts,clone,query_rewrite_plugins,funcs_1
                             WORKER_7_MTR_SUITES=rocksdb,rocksdb_stress,rocksdb_rpl,innodb_zip,information_schema,rocksdb_sys_vars
