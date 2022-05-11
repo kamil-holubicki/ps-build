@@ -87,7 +87,7 @@ pipeline {
             name: 'TOKUBACKUP_BRANCH',
             trim: true)
         choice(
-            choices: 'centos:6\ncentos:7\ncentos:8\nubuntu:bionic\nubuntu:focal\nubuntu:hirsute\ndebian:buster\ndebian:bullseye',
+            choices: 'ubuntu:focal\ncentos:6\ncentos:7\ncentos:8\nubuntu:bionic\nubuntu:hirsute\ndebian:buster\ndebian:bullseye',
             description: 'OS version for compilation',
             name: 'DOCKER_OS')
         choice(
@@ -99,7 +99,7 @@ pipeline {
             description: 'compiler version',
             name: 'COMPILER')
         choice(
-            choices: 'RelWithDebInfo\nDebug',
+            choices: 'Debug\nRelWithDebInfo',
             description: 'Type of build to produce',
             name: 'CMAKE_BUILD_TYPE')
         choice(
@@ -111,7 +111,7 @@ pipeline {
             description: 'Compile TokuDB engine',
             name: 'WITH_TOKUDB')
         choice(
-            choices: 'OFF\nON',
+            choices: 'ON\nOFF',
             description: 'Compile RocksDB engine',
             name: 'WITH_ROCKSDB')
         choice(
@@ -139,11 +139,11 @@ pipeline {
             description: 'Run mysql-test-run.pl',
             name: 'DEFAULT_TESTING')
         choice(
-            choices: 'yes\nno',
+            choices: 'no\nyes',
             description: 'Run mysql-test-run.pl --suite tokudb_backup',
             name: 'HOTBACKUP_TESTING')
         choice(
-            choices: 'yes\nno',
+            choices: 'no\nyes',
             description: 'Run mtr --suite=engines/iuds,engines/funcs --mysqld=--default-storage-engine=tokudb',
             name: 'TOKUDB_ENGINES_MTR')
         string(
@@ -151,7 +151,7 @@ pipeline {
             description: 'TokuDB specific mtr args',
             name: 'TOKUDB_ENGINES_MTR_ARGS')
         choice(
-            choices: 'yes\nno',
+            choices: 'no\nyes',
             description: 'Run ZenFS MTR tests',
             name: 'ZEN_FS_MTR')
         choice(

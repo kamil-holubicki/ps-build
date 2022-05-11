@@ -41,11 +41,11 @@
     - choice:
         name: DOCKER_OS
         choices:
+        - ubuntu:focal
         - centos:6
         - centos:7
         - centos:8
         - ubuntu:bionic
-        - ubuntu:focal
         - ubuntu:hirsute
         - debian:buster
         - debian:bullseye
@@ -63,8 +63,8 @@
     - choice:
         name: CMAKE_BUILD_TYPE
         choices:
-        - RelWithDebInfo
         - Debug
+        - RelWithDebInfo
         description: Type of build to produce
     - choice:
         name: ANALYZER_OPTS
@@ -87,14 +87,14 @@
     - choice:
         name: WITH_ROCKSDB
         choices:
-        - "OFF"
         - "ON"
+        - "OFF"
         description: Compile RocksDB engine
     - choice:
         name: WITH_ROUTER
         choices:
-        - "OFF"
         - "ON"
+        - "OFF"
         description: Whether to build MySQL Router
     - choice:
         name: WITH_MYSQLX
@@ -125,14 +125,14 @@
     - choice:
         name: HOTBACKUP_TESTING
         choices:
-        - "yes"
         - "no"
+        - "yes"
         description: Run mysql-test-run.pl --suite tokudb_backup
     - choice:
         name: TOKUDB_ENGINES_MTR
         choices:
-        - "yes"
         - "no"
+        - "yes"
         description: Run mtr --suite=engines/iuds,engines/funcs --mysqld=--default-storage-engine=tokudb
     - string:
         name: TOKUDB_ENGINES_MTR_ARGS
@@ -147,8 +147,8 @@
     - choice:
         name: ZEN_FS_MTR
         choices:
-        - "yes"
         - "no"
+        - "yes"
         description: Run ZenFS MTR tests
     - string:
         name: MTR_ARGS
