@@ -159,7 +159,7 @@ pipeline {
             description: 'Run case-insensetive MTR tests',
             name: 'CI_FS_MTR')
         string(
-            defaultValue: '--unit-tests-report',
+            defaultValue: '--unit-tests-report --mem --big-test',
             description: 'mysql-test-run.pl options, for options like: --big-test --only-big-test --nounit-tests --unit-tests-report',
             name: 'MTR_ARGS')
         string(
@@ -245,11 +245,11 @@ pipeline {
                         REPLY=$(curl -Is ${RAW_VERSION_LINK}/${BRANCH}/mysql-test/suites-groups.sh | head -n 1 | awk '{print $2}')
                         if [[ ${REPLY} != 200 ]]; then
                             # Unit tests will be executed by worker 1
-                            WORKER_1_MTR_SUITES="binlog_nogtid,innodb_undo,test_services,service_sys_var_registration,connection_control,service_status_var_registration,service_udf_registration,interactive_utilities"
+                            WORKER_1_MTR_SUITES="main|nobig,binlog_nogtid,innodb_undo,test_services,service_sys_var_registration,connection_control,service_status_var_registration,service_udf_registration,interactive_utilities"
                             WORKER_2_MTR_SUITES="main|big"
-                            WORKER_3_MTR_SUITES="innodb,main|nobig"
-                            WORKER_4_MTR_SUITES="rpl,auth_sec,audit_log,binlog_57_decryption,percona-pam-for-mysql,data_masking,procfs,rpl_encryption,tokudb,tokudb_add_index,tokudb_alter_table,tokudb_bugs,tokudb_parts,tokudb_perfschema,tokudb_rpl,audit_null,engines/iuds,engines/funcs,group_replication,jp,stress"
-                            WORKER_5_MTR_SUITES="rpl_gtid,rpl_nogtid,binlog,sys_vars,funcs_2,opt_trace,json,collations"
+                            WORKER_3_MTR_SUITES="innodb"
+                            WORKER_4_MTR_SUITES="auth_sec,audit_log,binlog_57_decryption,percona-pam-for-mysql,data_masking,procfs,rpl_encryption,tokudb,tokudb_add_index,tokudb_alter_table,tokudb_bugs,tokudb_parts,tokudb_perfschema,tokudb_rpl,audit_null,engines/iuds,engines/funcs,group_replication,jp,stress"
+                            WORKER_5_MTR_SUITES="rpl,rpl_gtid,rpl_nogtid,binlog,sys_vars,funcs_2,opt_trace,json,collations"
                             WORKER_6_MTR_SUITES="innodb_gis,perfschema,parts,clone,query_rewrite_plugins,funcs_1"
                             WORKER_7_MTR_SUITES="rocksdb,rocksdb_stress,rocksdb_rpl,innodb_zip,information_schema,rocksdb_sys_vars"
                             WORKER_8_MTR_SUITES="component_keyring_file,innodb_fts,x,encryption,sysschema,binlog_gtid,gcol,federated,test_service_sql_api,gis,secondary_engine"
