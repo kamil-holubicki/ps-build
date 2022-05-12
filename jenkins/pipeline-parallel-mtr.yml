@@ -15,6 +15,10 @@
       script-path: jenkins/pipeline-parallel-mtr.groovy
     parameters:
     - string:
+        name: BUILD_NUMBER_BINARIES
+        default: ""
+        description: Reuse binaries built in the specified build. Useful for quick MTR test rerun without rebuild.
+    - string:
         name: GIT_REPO
         default: "https://github.com/percona/percona-server"
         description: URL to percona-server repository
