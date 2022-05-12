@@ -435,7 +435,7 @@ pipeline {
                                                     sudo /sbin/mkfs.vfat /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img
                                                     sudo mkdir -p /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
                                                     sudo mount -o loop -o uid=27 -o gid=27 -o check=r /mnt/ci_disk_\$CMAKE_BUILD_TYPE.img /mnt/ci_disk_dir_\$CMAKE_BUILD_TYPE
-                                                fi                                
+                                                fi
                                             fi
 
                                             echo Test: \$(date -u "+%s")
@@ -443,9 +443,10 @@ pipeline {
                                             # Allow unit tests execution only on 1st worker if requested
                                             # Allow case insensitive FS tests only on 1st worker if requested
                                             # Allow CI FS tests only on 1st worker if requested
-                                            
+                                            # Allow keyring_vault tests only on 1st worker if requested
+
                                             export MTR_SUITES=${WORKER_1_MTR_SUITES}
-                                            
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -a -q | wc -l) -ne 0 ]; then
@@ -499,7 +500,7 @@ pipeline {
                                             until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
-                                            
+
                                             if [ -f /usr/bin/yum ]; then
                                                 sudo yum -y install jq gflags-devel
                                             else
@@ -511,7 +512,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_2_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
-                                            
+                                            KEYRING_VAULT_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -a -q | wc -l) -ne 0 ]; then
@@ -565,7 +567,7 @@ pipeline {
                                             until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
-                                            
+
                                             if [ -f /usr/bin/yum ]; then
                                                 sudo yum -y install jq gflags-devel
                                             else
@@ -577,7 +579,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_3_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
-                                            
+                                            KEYRING_VAULT_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -a -q | wc -l) -ne 0 ]; then
@@ -631,7 +634,7 @@ pipeline {
                                             until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
-                                            
+
                                             if [ -f /usr/bin/yum ]; then
                                                 sudo yum -y install jq gflags-devel
                                             else
@@ -643,7 +646,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_4_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
-                                            
+                                            KEYRING_VAULT_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -a -q | wc -l) -ne 0 ]; then
@@ -697,7 +701,7 @@ pipeline {
                                             until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
-                                            
+
                                             if [ -f /usr/bin/yum ]; then
                                                 sudo yum -y install jq gflags-devel
                                             else
@@ -709,7 +713,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_5_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
-                                            
+                                            KEYRING_VAULT_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -a -q | wc -l) -ne 0 ]; then
@@ -763,7 +768,7 @@ pipeline {
                                             until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
-                                            
+
                                             if [ -f /usr/bin/yum ]; then
                                                 sudo yum -y install jq gflags-devel
                                             else
@@ -775,7 +780,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_6_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
-                                            
+                                            KEYRING_VAULT_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -a -q | wc -l) -ne 0 ]; then
@@ -829,7 +835,7 @@ pipeline {
                                             until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
-                                            
+
                                             if [ -f /usr/bin/yum ]; then
                                                 sudo yum -y install jq gflags-devel
                                             else
@@ -841,7 +847,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_7_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
-                                            
+                                            KEYRING_VAULT_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -a -q | wc -l) -ne 0 ]; then
@@ -895,7 +902,7 @@ pipeline {
                                             until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
-                                            
+
                                             if [ -f /usr/bin/yum ]; then
                                                 sudo yum -y install jq gflags-devel
                                             else
@@ -907,7 +914,8 @@ pipeline {
                                             export MTR_SUITES=${WORKER_8_MTR_SUITES}
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
-                                            
+                                            KEYRING_VAULT_MTR=no
+
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
                                                 if [ \$(docker ps -a -q | wc -l) -ne 0 ]; then
