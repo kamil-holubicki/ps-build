@@ -302,6 +302,10 @@ pipeline {
             }
         }
         stage('Build') {
+            when {
+                beforeAgent true
+                expression { env.BUILD_NUMBER_BINARIES == '' }
+            }
             agent { label LABEL }
             steps {
                 timeout(time: 180, unit: 'MINUTES')  {
@@ -378,6 +382,10 @@ pipeline {
             }
         }
         stage('Archive Build') {
+            when {
+                beforeAgent true
+                expression { env.BUILD_NUMBER_BINARIES == '' }
+            }
             agent { label 'micro-amazon' }
             steps {
                 timeout(time: 60, unit: 'MINUTES')  {
@@ -389,6 +397,10 @@ pipeline {
                         '''
                         recordIssues enabledForFailure: true, tools: [gcc(pattern: 'build.log')]
                     }
+                }
+                script {
+                    env.BUILD_TAG_BINARIES = env.BUILD_TAG
+                    BUILD_NUMBER_BINARIES_FOR_RERUN = env.BUILD_NUMBER
                 }
             }
         }
@@ -419,7 +431,7 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
                                             
@@ -458,7 +470,7 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
                                             done
                                         '''
@@ -497,7 +509,7 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
 
@@ -525,7 +537,7 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
                                             done
                                         '''
@@ -564,7 +576,7 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
 
@@ -592,7 +604,7 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
                                             done
                                         '''
@@ -631,7 +643,7 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
 
@@ -659,7 +671,7 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
                                             done
                                         '''
@@ -698,7 +710,7 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
 
@@ -726,7 +738,7 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
                                             done
                                         '''
@@ -765,7 +777,7 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
 
@@ -793,7 +805,7 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
                                             done
                                         '''
@@ -832,7 +844,7 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
 
@@ -860,7 +872,7 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
                                             done
                                         '''
@@ -899,7 +911,7 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
 
@@ -927,7 +939,7 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG}/; do
+                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
                                             done
                                         '''
@@ -949,11 +961,11 @@ pipeline {
                 retry(3) {
                 deleteDir()
                 sh '''#!/bin/bash
-                    aws s3 sync --no-progress --exclude 'binary.tar.gz' s3://ps-build-cache/${BUILD_TAG}/ ./
+                    aws s3 sync --no-progress --exclude 'binary.tar.gz' s3://ps-build-cache/${BUILD_TAG_BINARIES}/ ./
 
                     echo "
-                        binary    - https://s3.us-east-2.amazonaws.com/ps-build-cache/${BUILD_TAG}/binary.tar.gz
-                        build log - https://s3.us-east-2.amazonaws.com/ps-build-cache/${BUILD_TAG}/build.log.gz
+                        binary    - https://s3.us-east-2.amazonaws.com/ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz
+                        build log - https://s3.us-east-2.amazonaws.com/ps-build-cache/${BUILD_TAG_BINARIES}/build.log.gz
                     " > public_url
                 '''
                 step([$class: 'JUnitResultArchiver', testResults: '*.xml', healthScaleFactor: 1.0])
