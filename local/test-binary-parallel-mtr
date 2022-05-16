@@ -357,9 +357,11 @@ if [[ "${TOKUDB_ENGINES_MTR}" = 'no' ]] && [[ "${HOTBACKUP_TESTING}" = 'no' ]] &
 fi
 
 
-# KH: this stuff will not happen now
 if [[ ${ZEN_FS_MTR} = 'yes' ]] && [[ ${WITH_ROCKSDB} = 'ON' ]]; then
     if [[ ${DOCKER_OS} = 'ubuntu-focal' ]] || [[ ${DOCKER_OS} = 'ubuntu-hirsute' ]] || [[ ${DOCKER_OS} = 'debian-bullseye' ]]; then
+        echo "Running ZEN FS tests"
+        start=`date +%s`
+
         sudo install --owner=root --group=root --mode=+rx ${WORKDIR_ABS}/PS/runtime_output_directory/zenfs /usr/bin/
 
         sudo rm -rf /tmp/zenfs* || true
@@ -398,10 +400,17 @@ if [[ ${ZEN_FS_MTR} = 'yes' ]] && [[ ${WITH_ROCKSDB} = 'ON' ]]; then
             ${ROCKSDB_ZENFS_MTR_ARGS} \
             --junit-output=${WORKDIR_ABS}/junit_rocksdb_zenfs.xml \
             --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.rocksdb_zenfs" || true
+
+        end=`date +%s`
+        runtime=$((end-start))
+        echo KH,SUITE_TOTAL,ZEN_FS_tests,time,$runtime
     fi
 fi
 
 if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[ ${DOCKER_OS} != 'i386/centos-6' ]]; then
+    echo "Running KEYRING_VAULT tests"
+    start=`date +%s`
+
     if [ -f /usr/bin/yum ]; then
         if [[ -f /opt/rh/httpd24/enable ]]; then
             source /opt/rh/httpd24/enable
@@ -471,6 +480,10 @@ if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[
         --suite=keyring_vault \
         --junit-output=${WORKDIR_ABS}/junit_keyring_vault_prod_v2.xml \
         --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.keyring_vault_prod_v2" || true
+
+    end=`date +%s`
+    runtime=$((end-start))
+    echo KH,SUITE_TOTAL,KEYRING_VAULT_tests,time,$runtime
 fi
 
 exit $status
