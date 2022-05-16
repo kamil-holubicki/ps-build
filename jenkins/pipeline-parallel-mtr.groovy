@@ -10,6 +10,7 @@ def WORKER_6_ABORTED = false
 def WORKER_7_ABORTED = false
 def WORKER_8_ABORTED = false
 def BUILD_NUMBER_BINARIES_FOR_RERUN = 0
+def WORKER_1_LABEL = LABEL
 
 if (
     (params.ANALYZER_OPTS.contains('-DWITH_ASAN=ON')) ||
@@ -32,21 +33,21 @@ if (
     (params.ZEN_FS_MTR == 'yes') &&
     (params.DOCKER_OS == 'ubuntu:hirsute')
     ) { 
-        LABEL = 'docker-32gb-hirsute'
+        WORKER_1_LABEL = 'docker-32gb-hirsute'
       }
 
 if (
     (params.ZEN_FS_MTR == 'yes') &&
     (params.DOCKER_OS == 'ubuntu:focal')
     ) { 
-        LABEL = 'docker-32gb-focal'
+        WORKER_1_LABEL = 'docker-32gb-focal'
       }
 
 if (
     (params.ZEN_FS_MTR == 'yes') &&
     (params.DOCKER_OS == 'debian:bullseye')
     ) {
-        LABEL = 'docker-32gb-bullseye'
+        WORKER_1_LABEL = 'docker-32gb-bullseye'
       }
 
 pipeline {
@@ -411,7 +412,7 @@ pipeline {
                         beforeAgent true
                         expression { (env.WORKER_1_MTR_SUITES?.trim()) }
                     }
-                    agent { label LABEL }
+                    agent { label WORKER_1_LABEL }
                     steps {
                         catchError(buildResult: 'UNSTABLE') {
                             script {
@@ -434,7 +435,7 @@ pipeline {
                                             until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
                                             done
-                                            
+
                                             if [ -f /usr/bin/yum ]; then
                                                 sudo yum -y install jq gflags-devel
                                             else
@@ -456,6 +457,7 @@ pipeline {
                                             # Allow case insensitive FS tests only on 1st worker if requested
                                             # Allow CI FS tests only on 1st worker if requested
                                             # Allow keyring_vault tests only on 1st worker if requested
+                                            # Allow ZenFS tests only on 1st worker if requested
 
                                             export MTR_SUITES=${WORKER_1_MTR_SUITES}
 
@@ -525,6 +527,7 @@ pipeline {
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
                                             KEYRING_VAULT_MTR=no
+                                            ZEN_FS_MTR=no
 
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
@@ -592,6 +595,7 @@ pipeline {
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
                                             KEYRING_VAULT_MTR=no
+                                            ZEN_FS_MTR=no
 
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
@@ -659,6 +663,7 @@ pipeline {
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
                                             KEYRING_VAULT_MTR=no
+                                            ZEN_FS_MTR=no
 
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
@@ -726,6 +731,7 @@ pipeline {
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
                                             KEYRING_VAULT_MTR=no
+                                            ZEN_FS_MTR=no
 
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
@@ -793,6 +799,7 @@ pipeline {
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
                                             KEYRING_VAULT_MTR=no
+                                            ZEN_FS_MTR=no
 
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
@@ -860,6 +867,7 @@ pipeline {
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
                                             KEYRING_VAULT_MTR=no
+                                            ZEN_FS_MTR=no
 
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
@@ -927,6 +935,7 @@ pipeline {
                                             MTR_ARGS=${MTR_ARGS//"--unit-tests-report"/""}
                                             CI_FS_MTR=no
                                             KEYRING_VAULT_MTR=no
+                                            ZEN_FS_MTR=no
 
                                             aws ecr-public get-login-password --region us-east-1 | docker login -u AWS --password-stdin public.ecr.aws/e7j3v3n0
                                             sg docker -c "
