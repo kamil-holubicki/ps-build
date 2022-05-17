@@ -269,11 +269,17 @@ if [[ "${CI_FS_MTR}" = 'yes' ]]; then
     echo "Running CI FS tests"
     start=`date +%s`
 
+    MTR_ARGS_CI=${MTR_ARGS}
+
+    if [[ $UNIT_TESTS == "1" ]]; then
+        MTR_ARGS_CI+=" --unit-tests-report"
+        UNIT_TESTS=0
+    fi
     # no --mem allowed if vardir specified
-    MTR_ARGS=${MTR_ARGS//"--mem"/""}
+    MTR_ARGS_CI=${MTR_ARGS_CI//"--mem"/""}
 
     if [[ $BIG_TEST == "1" ]]; then
-        MTR_ARGS+=" --big-test"
+        MTR_ARGS_CI+=" --big-test"
     fi
 
     CI_TESTS=""
@@ -292,7 +298,7 @@ if [[ "${CI_FS_MTR}" = 'yes' ]]; then
         --suite-timeout=9999 \
         --parallel=$(nproc) \
         --testcase-timeout=${TESTCASE_TIMEOUT} \
-        ${MTR_ARGS} \
+        ${MTR_ARGS_CI} \
         --tmpdir="/tmp/ps_mtr_tempdir" \
         --vardir="/tmp/ci_disk_dir" \
         ${CI_TESTS} \
@@ -362,6 +368,19 @@ if [[ ${ZEN_FS_MTR} = 'yes' ]] && [[ ${WITH_ROCKSDB} = 'ON' ]]; then
         echo "Running ZEN FS tests"
         start=`date +%s`
 
+        MTR_ARGS_ZENFS=${MTR_ARGS}
+
+        if [[ $UNIT_TESTS == "1" ]]; then
+            MTR_ARGS_ZENFS+=" --unit-tests-report"
+            UNIT_TESTS=0
+        fi
+        # no --mem
+        MTR_ARGS_ZENFS=${MTR_ARGS_ZENFS//"--mem"/""}
+
+        if [[ $BIG_TEST == "1" ]]; then
+            MTR_ARGS_ZENFS+=" --big-test"
+        fi
+
         sudo install --owner=root --group=root --mode=+rx ${WORKDIR_ABS}/PS/runtime_output_directory/zenfs /usr/bin/
 
         sudo rm -rf /tmp/zenfs* || true
@@ -382,7 +401,7 @@ if [[ ${ZEN_FS_MTR} = 'yes' ]] && [[ ${WITH_ROCKSDB} = 'ON' ]]; then
         zenfs ls-uuid
 
         if [[ ${CMAKE_BUILD_TYPE} = "Debug" ]]; then
-            ROCKSDB_ZENFS_MTR_ARGS="--debug-server"
+            MTR_ARGS_ZENFS+="--debug-server"
         fi
 
         SOURCE_FS_URI1=zenfs://dev:nullb0 SOURCE_FS_URI2=zenfs://dev:nullb1 SOURCE_FS_URI3=zenfs://dev:nullb2 \
@@ -392,12 +411,11 @@ if [[ ${ZEN_FS_MTR} = 'yes' ]] && [[ ${WITH_ROCKSDB} = 'ON' ]]; then
             --max-test-fail=0 \
             --suite-timeout=9999 \
             --testcase-timeout=${TESTCASE_TIMEOUT} \
-            --big-test \
             --defaults-extra-file=include/zenfs_nullb_emulated_parallel_rpl.cnf \
             --fs-cleanup-hook="@lib/zenfs_cleanup_rpl.sh" \
             --parallel=3 \
             --suite=rocksdb \
-            ${ROCKSDB_ZENFS_MTR_ARGS} \
+            ${MTR_ARGS_ZENFS} \
             --junit-output=${WORKDIR_ABS}/junit_rocksdb_zenfs.xml \
             --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.rocksdb_zenfs" || true
 
@@ -410,6 +428,17 @@ fi
 if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[ ${DOCKER_OS} != 'i386/centos-6' ]]; then
     echo "Running KEYRING_VAULT tests"
     start=`date +%s`
+
+    MTR_ARGS_KV=${MTR_ARGS}
+
+    if [[ $UNIT_TESTS == "1" ]]; then
+        MTR_ARGS_KV+=" --unit-tests-report"
+        UNIT_TESTS=0
+    fi
+
+    if [[ $BIG_TEST == "1" ]]; then
+        MTR_ARGS_KV+=" --big-test"
+    fi
 
     if [ -f /usr/bin/yum ]; then
         if [[ -f /opt/rh/httpd24/enable ]]; then
@@ -427,8 +456,7 @@ if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[
         --max-test-fail=0 \
         --parallel=$(nproc) \
         --retry=0 \
-        --big-test \
-        --unit-tests \
+        ${MTR_ARGS_KV} \
         --suite=keyring_vault \
         --junit-output=${WORKDIR_ABS}/junit_keyring_vault_dev_v1.xml \
         --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.keyring_vault_dev_v1" || true
@@ -442,8 +470,7 @@ if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[
         --max-test-fail=0 \
         --parallel=$(nproc) \
         --retry=0 \
-        --big-test \
-        --unit-tests \
+        ${MTR_ARGS_KV} \
         --suite=keyring_vault \
         --junit-output=${WORKDIR_ABS}/junit_keyring_vault_dev_v2.xml \
         --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.keyring_vault_dev_v2" || true
@@ -459,8 +486,7 @@ if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[
         --max-test-fail=0 \
         --parallel=$(nproc) \
         --retry=0 \
-        --big-test \
-        --unit-tests \
+        ${MTR_ARGS_KV} \
         --suite=keyring_vault \
         --junit-output=${WORKDIR_ABS}/junit_keyring_vault_prod_v1.xml \
         --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.keyring_vault_prod_v1" || true
@@ -475,8 +501,7 @@ if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[
         --max-test-fail=0 \
         --parallel=$(nproc) \
         --retry=0 \
-        --big-test \
-        --unit-tests \
+        ${MTR_ARGS_KV} \
         --suite=keyring_vault \
         --junit-output=${WORKDIR_ABS}/junit_keyring_vault_prod_v2.xml \
         --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.keyring_vault_prod_v2" || true
