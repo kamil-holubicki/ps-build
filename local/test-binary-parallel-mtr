@@ -401,7 +401,7 @@ if [[ ${ZEN_FS_MTR} = 'yes' ]] && [[ ${WITH_ROCKSDB} = 'ON' ]]; then
         zenfs ls-uuid
 
         if [[ ${CMAKE_BUILD_TYPE} = "Debug" ]]; then
-            MTR_ARGS_ZENFS+="--debug-server"
+            MTR_ARGS_ZENFS+=" --debug-server"
         fi
 
         SOURCE_FS_URI1=zenfs://dev:nullb0 SOURCE_FS_URI2=zenfs://dev:nullb1 SOURCE_FS_URI3=zenfs://dev:nullb2 \
