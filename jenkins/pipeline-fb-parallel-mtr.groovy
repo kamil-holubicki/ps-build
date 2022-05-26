@@ -883,7 +883,7 @@ pipeline {
                             string(name:'WORKER_7_MTR_SUITES', value: WORKER_7_RERUN_SUITES),
                             string(name:'WORKER_8_MTR_SUITES', value: WORKER_8_RERUN_SUITES),
                             booleanParam(name: 'ALLOW_ABORTED_WORKERS_RERUN', value: false),
-                            string(name:'BUILD_DISPLAY_NAME', value: "${BUILD_NUBER} retry")
+                            string(name:'BUILD_DISPLAY_NAME', value: "${BUILD_NUMBER} retry")
                         ]
                     }
                 }  // env.ALLOW_ABORTED_WORKERS_RERUN
