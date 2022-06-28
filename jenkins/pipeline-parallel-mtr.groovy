@@ -266,26 +266,26 @@ pipeline {
                             source ${WORKSPACE}/suites-groups.sh
                         fi
 
-                        echo ${WORKER_1_MTR_SUITES} > ../worker_1.suites
-                        echo ${WORKER_2_MTR_SUITES} > ../worker_2.suites
-                        echo ${WORKER_3_MTR_SUITES} > ../worker_3.suites
-                        echo ${WORKER_4_MTR_SUITES} > ../worker_4.suites
-                        echo ${WORKER_5_MTR_SUITES} > ../worker_5.suites
-                        echo ${WORKER_6_MTR_SUITES} > ../worker_6.suites
-                        echo ${WORKER_7_MTR_SUITES} > ../worker_7.suites
-                        echo ${WORKER_8_MTR_SUITES} > ../worker_8.suites
+                        echo ${WORKER_1_MTR_SUITES} > ${WORKSPACE}/worker_1.suites
+                        echo ${WORKER_2_MTR_SUITES} > ${WORKSPACE}/worker_2.suites
+                        echo ${WORKER_3_MTR_SUITES} > ${WORKSPACE}/worker_3.suites
+                        echo ${WORKER_4_MTR_SUITES} > ${WORKSPACE}/worker_4.suites
+                        echo ${WORKER_5_MTR_SUITES} > ${WORKSPACE}/worker_5.suites
+                        echo ${WORKER_6_MTR_SUITES} > ${WORKSPACE}/worker_6.suites
+                        echo ${WORKER_7_MTR_SUITES} > ${WORKSPACE}/worker_7.suites
+                        echo ${WORKER_8_MTR_SUITES} > ${WORKSPACE}/worker_8.suites
                     fi
                 '''
                 script {
                     if (env.FULL_MTR == 'yes') {
-                        env.WORKER_1_MTR_SUITES = sh(returnStdout: true, script: "cat ../worker_1.suites").trim()
-                        env.WORKER_2_MTR_SUITES = sh(returnStdout: true, script: "cat ../worker_2.suites").trim()
-                        env.WORKER_3_MTR_SUITES = sh(returnStdout: true, script: "cat ../worker_3.suites").trim()
-                        env.WORKER_4_MTR_SUITES = sh(returnStdout: true, script: "cat ../worker_4.suites").trim()
-                        env.WORKER_5_MTR_SUITES = sh(returnStdout: true, script: "cat ../worker_5.suites").trim()
-                        env.WORKER_6_MTR_SUITES = sh(returnStdout: true, script: "cat ../worker_6.suites").trim()
-                        env.WORKER_7_MTR_SUITES = sh(returnStdout: true, script: "cat ../worker_7.suites").trim()
-                        env.WORKER_8_MTR_SUITES = sh(returnStdout: true, script: "cat ../worker_8.suites").trim()
+                        env.WORKER_1_MTR_SUITES = sh(returnStdout: true, script: "cat ${WORKSPACE}/worker_1.suites").trim()
+                        env.WORKER_2_MTR_SUITES = sh(returnStdout: true, script: "cat ${WORKSPACE}/worker_2.suites").trim()
+                        env.WORKER_3_MTR_SUITES = sh(returnStdout: true, script: "cat ${WORKSPACE}/worker_3.suites").trim()
+                        env.WORKER_4_MTR_SUITES = sh(returnStdout: true, script: "cat ${WORKSPACE}/worker_4.suites").trim()
+                        env.WORKER_5_MTR_SUITES = sh(returnStdout: true, script: "cat ${WORKSPACE}/worker_5.suites").trim()
+                        env.WORKER_6_MTR_SUITES = sh(returnStdout: true, script: "cat ${WORKSPACE}/worker_6.suites").trim()
+                        env.WORKER_7_MTR_SUITES = sh(returnStdout: true, script: "cat ${WORKSPACE}/worker_7.suites").trim()
+                        env.WORKER_8_MTR_SUITES = sh(returnStdout: true, script: "cat ${WORKSPACE}/worker_8.suites").trim()
                     }
                     echo "WORKER_1_MTR_SUITES: ${env.WORKER_1_MTR_SUITES}"
                     echo "WORKER_2_MTR_SUITES: ${env.WORKER_2_MTR_SUITES}"
