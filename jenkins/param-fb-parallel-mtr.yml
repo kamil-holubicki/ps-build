@@ -18,6 +18,10 @@
         artifact-days-to-keep: -1
         artifact-num-to-keep: 50
     parameters:
+    - matrix-combinations:
+        name: COMBINATIONS
+        description: "Select matrix combinations"
+        filter: CMAKE_BUILD_TYPE=="Debug" && DOCKER_OS=="ubuntu:focal" || CMAKE_BUILD_TYPE=="RelWithDebInfo" && DOCKER_OS=="ubuntu:focal"
     - string:
         name: GIT_REPO
         default: "https://github.com/inikep/mysql-5.6"
