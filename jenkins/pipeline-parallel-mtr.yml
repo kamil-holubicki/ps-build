@@ -26,22 +26,6 @@
         name: BRANCH
         default: "8.0"
         description: Tag/Branch for percona-server repository
-    - string:
-        name: PERCONAFT_REPO
-        default:
-        description: URL to forked PerconaFT repository
-    - string:
-        name: PERCONAFT_BRANCH
-        default:
-        description: Tag/Branch for PerconaFT repository
-    - string:
-        name: TOKUBACKUP_REPO
-        default:
-        description: URL to forked Percona-TokuBackup repository
-    - string:
-        name: TOKUBACKUP_BRANCH
-        default:
-        description: Tag/Branch for Percona-TokuBackup repository
     - choice:
         name: DOCKER_OS
         choices:
@@ -83,12 +67,6 @@
         - -DWITH_VALGRIND=ON
         description: Enable code checking
     - choice:
-        name: WITH_TOKUDB
-        choices:
-        - "OFF"
-        - "ON"
-        description: Compile TokuDB engine
-    - choice:
         name: WITH_ROCKSDB
         choices:
         - "ON"
@@ -126,22 +104,6 @@
         - "yes"
         - "no"
         description: Run mysql-test-run.pl
-    - choice:
-        name: HOTBACKUP_TESTING
-        choices:
-        - "no"
-        - "yes"
-        description: Run mysql-test-run.pl --suite tokudb_backup
-    - choice:
-        name: TOKUDB_ENGINES_MTR
-        choices:
-        - "no"
-        - "yes"
-        description: Run mtr --suite=engines/iuds,engines/funcs --mysqld=--default-storage-engine=tokudb
-    - string:
-        name: TOKUDB_ENGINES_MTR_ARGS
-        default:
-        description: TokuDB specific mtr args
     - choice:
         name: CI_FS_MTR
         choices:
