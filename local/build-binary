@@ -36,6 +36,13 @@ DOWNLOAD_DIR=${WORKDIR}/source_downloads
 mkdir -p ${INSTALL_DIR} ${DOWNLOAD_DIR}
 SOURCEDIR=$(cd ${2:-$(dirname $0)/../sources}; pwd -P)
 
+# ------------------------------------------------------------------------------
+# get rid of "fatal: detected dubious ownership in repository at '/tmp/ps'"
+# ------------------------------------------------------------------------------
+if [[ -n "$(which git)" ]] && [[ -d "$SOURCEDIR/.git" ]]; then
+    git config --global --add safe.directory $SOURCEDIR
+fi
+
 
 # ------------------------------------------------------------------------------
 # download external libs
