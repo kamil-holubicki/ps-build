@@ -331,7 +331,7 @@ fi
 
 # KH: this stuff will not happen now
 if [[ ${ZEN_FS_MTR} = 'yes' ]] && [[ ${WITH_ROCKSDB} = 'ON' ]]; then
-    if [[ ${DOCKER_OS} = 'ubuntu-focal' ]] || [[ ${DOCKER_OS} = 'ubuntu-hirsute' ]] || [[ ${DOCKER_OS} = 'debian-bullseye' ]]; then
+    if [[ ${DOCKER_OS} = 'ubuntu-focal' ]] || [[ ${DOCKER_OS} = 'debian-bullseye' ]]; then
         sudo install --owner=root --group=root --mode=+rx ${WORKDIR_ABS}/PS/runtime_output_directory/zenfs /usr/bin/
 
         sudo rm -rf /tmp/zenfs* || true
