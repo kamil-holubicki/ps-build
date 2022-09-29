@@ -40,7 +40,17 @@ SOURCEDIR=$(cd ${2:-$(dirname $0)/../sources}; pwd -P)
 # get rid of "fatal: detected dubious ownership in repository at '/tmp/ps'"
 # ------------------------------------------------------------------------------
 if [[ -n "$(which git)" ]] && [[ -d "$SOURCEDIR/.git" ]]; then
-    git config --global --add safe.directory $SOURCEDIR
+    whoami
+    echo $HOME
+    sudo mkdir -p $HOME
+    sudo chown -R mysql:mysql $HOME
+    ls -la $HOME || :
+    pwd
+    git config --list --show-origin || :
+    pushd $SOURCEDIR
+    git config --global --add safe.directory $SOURCEDIR || :
+    git config --list --show-origin || :
+    popd
 fi
 
 
