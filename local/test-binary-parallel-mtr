@@ -300,7 +300,7 @@ if [[ "${CI_FS_MTR}" = 'yes' ]]; then
         --testcase-timeout=${TESTCASE_TIMEOUT} \
         ${MTR_ARGS_CI} \
         --tmpdir="/tmp/ps_mtr_tempdir" \
-        --vardir="/tmp/ci_disk_dir" \
+        --vardir="/tmp/ci_disk_dir/var" \
         ${CI_TESTS} \
         --junit-output=${WORKDIR_ABS}/junit_ci_fs.xml \
         --junit-package="${DOCKER_OS}.${CMAKE_BUILD_TYPE}.ci_fs" || true

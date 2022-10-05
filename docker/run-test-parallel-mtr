@@ -55,8 +55,8 @@ if [[ "${KEYRING_VAULT_MTR}" == 'yes' ]] && [[ ${DOCKER_OS} != 'centos:6' ]] && 
     VAULT_DOCKER_FLAG="--network bridge-vault"
 fi
 
-docker run --rm --shm-size=20gb \
-    --tmpfs /dev/shm:rw,exec \
+docker run --rm --shm-size=24G \
+    --tmpfs /dev/shm:rw,exec,size=24G \
     --security-opt seccomp=unconfined \
     --sysctl net.ipv6.conf.lo.disable_ipv6=0 \
     --mount type=bind,source=${ROOT_DIR},destination=/tmp/ps \
@@ -97,7 +97,7 @@ docker run --rm --shm-size=20gb \
     export DOCKER_OS='${DOCKER_OS//:/-}'
     export ZEN_FS_MTR='${ZEN_FS_MTR}'
     export WITH_ROCKSDB='${WITH_ROCKSDB}'
-
+/bin/bash
     mv /tmp/ps/*.pem /tmp/results || true
     cp /tmp/ps/results/*.tar.gz /tmp/results
 
