@@ -91,6 +91,13 @@ if [[ "${ANALYZER_OPTS}" == *WITH_VALGRIND=ON* ]]; then
   fi
 fi
 
+# hack for too big instances ;)
+if [[ ${PARALLEL} -gt 8 ]]; then
+  echo "Limit parallel ${PARALLEL} -> 8"
+  PARALLEL=8
+fi
+
+
 if [[ "${ANALYZER_OPTS}" == *WITH_*SAN*=ON* ]]; then
     MTR_ARGS+=" --sanitize"
 fi
@@ -296,7 +303,7 @@ if [[ "${CI_FS_MTR}" = 'yes' ]]; then
         --force ${MYSQLD_ENV} \
         --max-test-fail=0 \
         --suite-timeout=9999 \
-        --parallel=$(nproc) \
+        --parallel=$PARALLEL \
         --testcase-timeout=${TESTCASE_TIMEOUT} \
         ${MTR_ARGS_CI} \
         --tmpdir="/tmp/ps_mtr_tempdir" \
@@ -454,7 +461,7 @@ if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[
     MTR_BUILD_THREAD=auto ./mtr \
         --force \
         --max-test-fail=0 \
-        --parallel=$(nproc) \
+        --parallel=$PARALLEL \
         --retry=0 \
         ${MTR_ARGS_KV} \
         --suite=keyring_vault \
@@ -468,7 +475,7 @@ if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[
     MTR_BUILD_THREAD=auto ./mtr \
         --force \
         --max-test-fail=0 \
-        --parallel=$(nproc) \
+        --parallel=$PARALLEL \
         --retry=0 \
         ${MTR_ARGS_KV} \
         --suite=keyring_vault \
@@ -484,7 +491,7 @@ if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[
     MTR_BUILD_THREAD=auto ./mtr \
         --force \
         --max-test-fail=0 \
-        --parallel=$(nproc) \
+        --parallel=$PARALLEL \
         --retry=0 \
         ${MTR_ARGS_KV} \
         --suite=keyring_vault \
@@ -499,7 +506,7 @@ if [[ ${KEYRING_VAULT_MTR} == 'yes' ]] && [[ ${DOCKER_OS} != 'centos-6' ]] && [[
     MTR_BUILD_THREAD=auto ./mtr \
         --force \
         --max-test-fail=0 \
-        --parallel=$(nproc) \
+        --parallel=$PARALLEL \
         --retry=0 \
         ${MTR_ARGS_KV} \
         --suite=keyring_vault \
