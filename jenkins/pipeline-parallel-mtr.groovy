@@ -188,10 +188,13 @@ pipeline {
         booleanParam(
             defaultValue: true,
             description: 'Rerun aborted workers',
-            name: 'ALLOW_ABORTED_WORKERS_RERUN')            
+            name: 'ALLOW_ABORTED_WORKERS_RERUN')
     }
     agent {
         label 'micro-amazon'
+    }
+    environment {
+        MAX_S3_RETRIES = 12
     }
     options {
         skipDefaultCheckout()
@@ -326,15 +329,21 @@ pipeline {
                                 ' build.log
                                 gzip build.log
 
+                                echo MAX_S3_RETRIES: ${MAX_S3_RETRIES}
+
                                 if [[ -f build.log.gz ]]; then
-                                    until aws s3 cp --no-progress --acl public-read build.log.gz s3://ps-build-cache/${BUILD_TAG}/build.log.gz; do
+                                    retry=0
+                                    until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 cp --no-progress --acl public-read build.log.gz s3://ps-build-cache/${BUILD_TAG}/build.log.gz; do
                                         sleep 5
+                                        retry=$((retry+1))
                                     done
                                 fi
 
                                 if [[ -f \$(ls sources/results/*.tar.gz | head -1) ]]; then
-                                    until aws s3 cp --no-progress --acl public-read sources/results/*.tar.gz s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz; do
+                                    retry=0
+                                    until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 cp --no-progress --acl public-read sources/results/*.tar.gz s3://ps-build-cache/${BUILD_TAG}/binary.tar.gz; do
                                         sleep 5
+                                        retry=$((retry+1))
                                     done
                                 else
                                     echo cannot find compiled archive
@@ -396,8 +405,10 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
 
                                             if [ -f /usr/bin/yum ]; then
@@ -436,8 +447,10 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
                                         '''
                                     }
@@ -475,8 +488,10 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
 
                                             if [ -f /usr/bin/yum ]; then
@@ -504,8 +519,10 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
                                         '''
                                     }
@@ -543,8 +560,10 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
 
                                             if [ -f /usr/bin/yum ]; then
@@ -572,8 +591,10 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
                                         '''
                                     }
@@ -611,8 +632,10 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
 
                                             if [ -f /usr/bin/yum ]; then
@@ -640,8 +663,10 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
                                         '''
                                     }
@@ -679,8 +704,10 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
 
                                             if [ -f /usr/bin/yum ]; then
@@ -708,8 +735,10 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
                                         '''
                                     }
@@ -747,8 +776,10 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
 
                                             if [ -f /usr/bin/yum ]; then
@@ -776,8 +807,10 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
                                         '''
                                     }
@@ -815,8 +848,10 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
 
                                             if [ -f /usr/bin/yum ]; then
@@ -844,8 +879,10 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
                                         '''
                                     }
@@ -883,8 +920,10 @@ pipeline {
                                             sudo git -C sources reset --hard || :
                                             sudo git -C sources clean -xdf   || :
 
-                                            until aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 cp --no-progress s3://ps-build-cache/${BUILD_TAG_BINARIES}/binary.tar.gz ./sources/results/binary.tar.gz; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
 
                                             if [ -f /usr/bin/yum ]; then
@@ -912,8 +951,10 @@ pipeline {
                                             "
 
                                             echo Archive test: \$(date -u "+%s")
-                                            until aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
+                                            retry=0
+                                            until [ $retry -eq ${MAX_S3_RETRIES} ] || aws s3 sync --no-progress --acl public-read --exclude 'binary.tar.gz' ./sources/results/ s3://ps-build-cache/${BUILD_TAG_BINARIES}/; do
                                                 sleep 5
+                                                retry=$((retry+1))
                                             done
                                         '''
                                     }
