@@ -68,7 +68,7 @@ pipeline {
             name: 'BRANCH',
             trim: true)
         choice(
-            choices: 'ubuntu:focal\ncentos:6\ncentos:7\ncentos:8\nubuntu:bionic\nubuntu:hirsute\ndebian:buster\ndebian:bullseye',
+            choices: 'ubuntu:focal\ncentos:7\ncentos:8\noraclelinux:9\nubuntu:bionic\nubuntu:jammy\ndebian:buster\ndebian:bullseye',
             description: 'OS version for compilation',
             name: 'DOCKER_OS')
         choice(

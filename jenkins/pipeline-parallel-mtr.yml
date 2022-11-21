@@ -30,11 +30,11 @@
         name: DOCKER_OS
         choices:
         - ubuntu:focal
-        - centos:6
         - centos:7
         - centos:8
+        - oraclelinux:9
         - ubuntu:bionic
-        - ubuntu:hirsute
+        - ubuntu:jammy
         - debian:buster
         - debian:bullseye
         description: OS version for compilation
