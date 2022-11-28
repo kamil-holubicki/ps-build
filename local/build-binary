@@ -130,8 +130,14 @@ if [[ "${ANALYZER_OPTS}" = *WITH_VALGRIND=ON* ]]; then
     BUILD_COMMENT+="-valgrind"
 fi
 
-OS_VERSION=$(lsb_release -d -s)
-if [[ "${OS_VERSION}" = *"CentOS release 6."* ]] && [[ "${CMAKE_BUILD_TYPE}" = "RelWithDebInfo" ]]; then
+DEB_VERSION=0
+RHVER=0
+if [[ -f /etc/redhat-release ]]; then
+    RHVER="$(rpm --eval %rhel)"
+else
+    DEB_VERSION=$(lsb_release -d -s)
+fi
+if [[ ${RHVER} = 6 ]] && [[ "${CMAKE_BUILD_TYPE}" = "RelWithDebInfo" ]]; then
     MYSQL_MAINTAINER_MODE="OFF"
 else
     MYSQL_MAINTAINER_MODE="ON"
@@ -159,12 +165,12 @@ TOKUDB_BACKUP_VERSION="${MYSQL_VERSION}${MYSQL_VERSION_EXTRA}"
 PRODUCT_FULL="Percona-Server-${MYSQL_VERSION}-${PERCONA_SERVER_VERSION}${BUILD_COMMENT}-${TAG}$(uname -s)${DIST_NAME}.${TARGET_ARCH}${SSL_VER}"
 COMMENT="Percona Server (GPL), Release ${MYSQL_VERSION_EXTRA#-}, Revision ${REVISION:-}${BUILD_COMMENT}"
 
-if [[ "${OS_VERSION}" = *"CentOS release 6."* ]] || [[ "${OS_VERSION}" = *"CentOS Linux release 7."* ]]; then
+if [[ ${RHVER} = 6 ]] || [[ ${RHVER} = 7 ]]; then
     JOB_CMAKE='cmake3'
     CMAKE_OPTS+=" -DWITH_LIBEVENT=bundled"
 fi
 
-if [[ "${OS_VERSION}" = *"Ubuntu 16.04."* ]] || [[ "${OS_VERSION}" = *"Debian GNU/Linux 9."* ]] ; then
+if [[ "${DEB_VERSION}" = *"Ubuntu 16.04."* ]] || [[ "${DEB_VERSION}" = *"Debian GNU/Linux 9."* ]] ; then
     CMAKE_OPTS+=" -DWITH_LIBEVENT=bundled"
 fi
 
@@ -212,7 +218,7 @@ else
     WITH_MECAB="system"
 fi
 
-if [[ "${WITH_KEYRING_VAULT}" == "ON" ]] && [[ "${OS_VERSION}" != *"CentOS release 6."* ]]; then
+if [[ "${WITH_KEYRING_VAULT}" == "ON" ]] && [[ ${RHVER} != 6 ]]; then
     CMAKE_OPTS+=" -DWITH_KEYRING_VAULT=ON -DWITH_KEYRING_VAULT_TEST=ON"
 else
     CMAKE_OPTS+=" -DWITH_KEYRING_VAULT=OFF -DWITH_KEYRING_VAULT_TEST=OFF"
