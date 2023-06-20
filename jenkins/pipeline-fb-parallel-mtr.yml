@@ -29,9 +29,9 @@
     - choice:
         name: DOCKER_OS
         choices:
-        - centos:7
         - centos:8
-        - ubuntu:focal
+        - oraclelinux:9
+        - ubuntu:jammy
         description: OS version for compilation
     - choice:
         name: JOB_CMAKE

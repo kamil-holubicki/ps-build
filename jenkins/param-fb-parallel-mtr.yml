@@ -28,7 +28,7 @@
         description: URL to repository
     - string:
         name: BRANCH
-        default: "fb-8.0.28"
+        default: "fb-8.0.32"
         description: Tag/Branch for repository
     - choice:
         name: JOB_CMAKE
@@ -142,9 +142,9 @@
          type: user-defined
          name: DOCKER_OS
          values:
-          - centos:7
           - centos:8
-          - ubuntu:focal
+          - oraclelinux:9
+          - ubuntu:jammy
     builders:
     - trigger-builds:
       - project: fb-mysql-server-8.0-pipeline-parallel-mtr-experimental

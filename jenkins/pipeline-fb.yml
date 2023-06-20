@@ -24,15 +24,14 @@
         description: URL to repository
     - string:
         name: BRANCH
-        default: "fb-8.0.28"
+        default: "fb-8.0.32"
         description: Tag/Branch for repository
     - choice:
         name: DOCKER_OS
         choices:
-        - centos:7
         - centos:8
-        - ubuntu:bionic
-        - ubuntu:focal
+        - oraclelinux:9
+        - ubuntu:jammy
         description: OS version for compilation
     - choice:
         name: JOB_CMAKE
