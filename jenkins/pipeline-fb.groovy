@@ -24,7 +24,7 @@ pipeline {
             description: 'Tag/Branch for repository',
             name: 'BRANCH')
         choice(
-            choices: 'centos:7\ncentos:8\nubuntu:bionic\nubuntu:focal',
+            choices: 'centos:8\noraclelinux:9\nubuntu:jammy',
             description: 'OS version for compilation',
             name: 'DOCKER_OS')
         choice(
